@@ -34,8 +34,12 @@ class GenerateActionTool extends Tool
             ->raw('validation_rules', [
                 'description' => 'Validation rules for the action payload as key-value pairs',
                 'type' => 'object',
-                'properties' => [],
-                'additionalProperties' => true,
+                'additionalProperties' => [
+                    'type' => ['string', 'array'],
+                    'items' => [
+                        'type' => 'string'
+                    ]
+                ]
             ])
             ->optional()
             ->string('uri_key')
