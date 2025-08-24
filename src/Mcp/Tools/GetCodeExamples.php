@@ -12,9 +12,7 @@ use Laravel\Mcp\Server\Tools\ToolResult;
 
 class GetCodeExamples extends Tool
 {
-    public function __construct(protected DocIndexer $indexer)
-    {
-    }
+    public function __construct(protected DocIndexer $indexer) {}
 
     public function description(): string
     {
@@ -42,7 +40,7 @@ class GetCodeExamples extends Tool
     }
 
     /**
-     * @param array<string, mixed> $arguments
+     * @param  array<string, mixed>  $arguments
      */
     public function handle(array $arguments): ToolResult|Generator
     {
@@ -215,10 +213,10 @@ class GetCodeExamples extends Tool
     protected function formatCodeExamples(array $examples, string $topic, bool $includeContext): string
     {
         $output = "# Laravel Restify Code Examples: {$topic}\n\n";
-        $output .= "Found ".count($examples)." relevant code example(s)\n\n";
+        $output .= 'Found '.count($examples)." relevant code example(s)\n\n";
 
         foreach ($examples as $index => $example) {
-            $output .= "## ".($index + 1).". {$example['document']['title']}\n";
+            $output .= '## '.($index + 1).". {$example['document']['title']}\n";
             $output .= "**Category:** {$example['document']['category']} | **Relevance:** {$example['relevance_score']}\n\n";
 
             if ($includeContext && ! empty($example['context'])) {

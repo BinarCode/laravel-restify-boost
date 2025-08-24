@@ -16,8 +16,7 @@ class DocIndexer
     public function __construct(
         protected DocParser $parser,
         protected DocCache $cache
-    ) {
-    }
+    ) {}
 
     public function indexDocuments(array $filePaths): void
     {

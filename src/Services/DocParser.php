@@ -10,8 +10,7 @@ class DocParser
 {
     public function __construct(
         protected DocCache $cache
-    ) {
-    }
+    ) {}
 
     public function parse(string $filePath): ?array
     {
@@ -82,7 +81,7 @@ class DocParser
     protected function extractCodeBlocks(string $markdown): array
     {
         $codeBlocks = [];
-        
+
         // Match code blocks with language specification
         preg_match_all('/```(\w+)?\n(.*?)```/s', $markdown, $matches, PREG_SET_ORDER);
 
@@ -105,7 +104,7 @@ class DocParser
     protected function extractHeadings(string $markdown): array
     {
         $headings = [];
-        
+
         preg_match_all('/^(#{1,6})\s+(.+)$/m', $markdown, $matches, PREG_SET_ORDER);
 
         foreach ($matches as $match) {
@@ -149,7 +148,7 @@ class DocParser
     protected function extractSummary(string $content): string
     {
         $summaryLength = config('restify-mcp.docs.processing.summary_length', 300);
-        
+
         $sentences = preg_split('/[.!?]+/', $content, -1, PREG_SPLIT_NO_EMPTY);
         $summary = '';
         $length = 0;

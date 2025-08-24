@@ -10,9 +10,7 @@ use Laravel\Mcp\Server\Resource;
 
 class RestifyApiReference extends Resource
 {
-    public function __construct(protected DocParser $parser)
-    {
-    }
+    public function __construct(protected DocParser $parser) {}
 
     public function description(): string
     {

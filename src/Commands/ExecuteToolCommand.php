@@ -57,7 +57,8 @@ class ExecuteToolCommand extends Command
 
         if (! array_key_exists($toolName, $this->availableTools)) {
             $this->error("Unknown tool: {$toolName}");
-            $this->line('Available tools: ' . implode(', ', array_keys($this->availableTools)));
+            $this->line('Available tools: '.implode(', ', array_keys($this->availableTools)));
+
             return self::FAILURE;
         }
 
@@ -84,10 +85,11 @@ class ExecuteToolCommand extends Command
 
             return self::SUCCESS;
         } catch (\Exception $e) {
-            $this->error('Tool execution failed: ' . $e->getMessage());
+            $this->error('Tool execution failed: '.$e->getMessage());
             if ($this->getOutput()->isVerbose()) {
                 $this->line($e->getTraceAsString());
             }
+
             return self::FAILURE;
         }
     }
@@ -130,7 +132,7 @@ class ExecuteToolCommand extends Command
 
             case 'navigate-docs':
                 $action = $this->option('action') ?: 'overview';
-                
+
                 $arguments = [
                     'action' => $action,
                     'category' => $this->option('category'),
@@ -141,7 +143,7 @@ class ExecuteToolCommand extends Command
 
             case 'generate-repository':
                 $modelName = $this->option('model-name');
-                if (!$modelName) {
+                if (! $modelName) {
                     $this->error('--model-name option is required for generate-repository');
                     exit(self::FAILURE);
                 }
@@ -158,7 +160,7 @@ class ExecuteToolCommand extends Command
 
             case 'generate-action':
                 $actionName = $this->option('action-name');
-                if (!$actionName) {
+                if (! $actionName) {
                     $this->error('--action-name option is required for generate-action');
                     exit(self::FAILURE);
                 }
@@ -185,7 +187,7 @@ class ExecuteToolCommand extends Command
 
             case 'generate-getter':
                 $getterName = $this->option('getter-name');
-                if (!$getterName) {
+                if (! $getterName) {
                     $this->error('--getter-name option is required for generate-getter');
                     exit(self::FAILURE);
                 }
@@ -203,7 +205,7 @@ class ExecuteToolCommand extends Command
         }
 
         // Filter out null values
-        return array_filter($arguments, fn($value) => $value !== null);
+        return array_filter($arguments, fn ($value) => $value !== null);
     }
 
     protected function displayResult(ToolResult $result): void
@@ -211,6 +213,7 @@ class ExecuteToolCommand extends Command
         if ($result->isError) {
             $this->error('Tool Error:');
             $this->line($result->content);
+
             return;
         }
 

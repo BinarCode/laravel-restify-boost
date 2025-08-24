@@ -66,8 +66,8 @@ class GenerateActionTool extends Tool
 
             // Validate action type
             $validActionTypes = ['index', 'show', 'standalone', 'invokable', 'destructive'];
-            if (!in_array($actionType, $validActionTypes)) {
-                return ToolResult::error('Invalid action type. Must be one of: ' . implode(', ', $validActionTypes));
+            if (! in_array($actionType, $validActionTypes)) {
+                return ToolResult::error('Invalid action type. Must be one of: '.implode(', ', $validActionTypes));
             }
 
             // Step 1: Analyze existing action patterns
@@ -83,9 +83,9 @@ class GenerateActionTool extends Tool
             );
 
             // Step 3: Check if action already exists
-            if (!$force && File::exists($actionDetails['file_path'])) {
+            if (! $force && File::exists($actionDetails['file_path'])) {
                 return ToolResult::error(
-                    "Action already exists at: {$actionDetails['file_path']}\n" .
+                    "Action already exists at: {$actionDetails['file_path']}\n".
                     "Use 'force: true' to overwrite."
                 );
             }
@@ -106,19 +106,19 @@ class GenerateActionTool extends Tool
             return $this->generateSuccessResponse($actionDetails, $actionContent);
 
         } catch (\Throwable $e) {
-            return ToolResult::error('Action generation failed: ' . $e->getMessage());
+            return ToolResult::error('Action generation failed: '.$e->getMessage());
         }
     }
 
     protected function analyzeActionPatterns(): array
     {
         $patterns = [
-            'namespace' => $this->getRootNamespace() . '\\Restify\\Actions',
+            'namespace' => $this->getRootNamespace().'\\Restify\\Actions',
             'base_path' => app_path('Restify/Actions'),
         ];
 
         try {
-            $finder = new Finder();
+            $finder = new Finder;
             $finder->files()
                 ->in(app_path())
                 ->name('*Action.php')
@@ -127,27 +127,27 @@ class GenerateActionTool extends Tool
 
             $actionPaths = [];
             foreach ($finder as $file) {
-                $relativePath = str_replace(app_path() . DIRECTORY_SEPARATOR, '', $file->getRealPath());
+                $relativePath = str_replace(app_path().DIRECTORY_SEPARATOR, '', $file->getRealPath());
                 $relativePath = str_replace(DIRECTORY_SEPARATOR, '/', $relativePath);
 
                 $pathParts = explode('/', $relativePath);
                 array_pop($pathParts); // Remove filename
 
-                if (!empty($pathParts)) {
-                    $namespace = $this->getRootNamespace() . '\\' . str_replace('/', '\\', implode('/', $pathParts));
+                if (! empty($pathParts)) {
+                    $namespace = $this->getRootNamespace().'\\'.str_replace('/', '\\', implode('/', $pathParts));
                     $basePath = app_path(implode('/', $pathParts));
 
                     $actionPaths[] = [
                         'namespace' => $namespace,
                         'base_path' => $basePath,
-                        'depth' => count($pathParts)
+                        'depth' => count($pathParts),
                     ];
                 }
             }
 
-            if (!empty($actionPaths)) {
+            if (! empty($actionPaths)) {
                 // Use the most common pattern (or deepest if tie)
-                usort($actionPaths, fn($a, $b) => $b['depth'] <=> $a['depth']);
+                usort($actionPaths, fn ($a, $b) => $b['depth'] <=> $a['depth']);
                 $patterns = $actionPaths[0];
             }
 
@@ -166,13 +166,13 @@ class GenerateActionTool extends Tool
         array $actionInfo
     ): array {
         // Ensure action name ends with 'Action'
-        if (!str_ends_with($actionName, 'Action')) {
+        if (! str_ends_with($actionName, 'Action')) {
             $actionName .= 'Action';
         }
 
         $namespace = $customNamespace ?: $actionInfo['namespace'];
         $basePath = $actionInfo['base_path'];
-        $filePath = $basePath . '/' . $actionName . '.php';
+        $filePath = $basePath.'/'.$actionName.'.php';
 
         return [
             'action_name' => $actionName,
@@ -233,14 +233,14 @@ class GenerateActionTool extends Tool
         }
 
         if ($actionType === 'standalone') {
-            $properties[] = "    public bool \$standalone = true;";
+            $properties[] = '    public bool $standalone = true;';
         }
 
         // Generate handle method based on action type
         $methods[] = $this->generateHandleMethod($actionType, $modelName, $validationRules);
 
         // Generate validation rules method if rules provided
-        if (!empty($validationRules)) {
+        if (! empty($validationRules)) {
             $methods[] = $this->generateRulesMethod($validationRules);
         }
 
@@ -263,60 +263,62 @@ class GenerateActionTool extends Tool
     protected function generateHandleMethod(string $actionType, ?string $modelName, array $validationRules): string
     {
         $validation = '';
-        if (!empty($validationRules)) {
+        if (! empty($validationRules)) {
             $validation = "\n        \$request->validate(\$this->rules());\n";
         }
 
         switch ($actionType) {
             case 'invokable':
-                return "    public function __invoke(Request \$request)\n" .
-                       "    {" .
-                       $validation .
-                       "\n        return response()->json([\n" .
-                       "            'message' => 'Action completed successfully',\n" .
-                       "        ]);\n" .
-                       "    }";
+                return "    public function __invoke(Request \$request)\n".
+                       '    {'.
+                       $validation.
+                       "\n        return response()->json([\n".
+                       "            'message' => 'Action completed successfully',\n".
+                       "        ]);\n".
+                       '    }';
 
             case 'show':
-                $modelVar = $modelName ? '$' . Str::camel($modelName) : '$model';
-                $modelParam = $modelName ? Str::studly($modelName) . ' ' . $modelVar : 'Model ' . $modelVar;
-                return "    public function handle(ActionRequest \$request, {$modelParam}): JsonResponse\n" .
-                       "    {" .
-                       $validation .
-                       "\n        // Perform action on single model\n" .
-                       "        // \$model->update(['status' => 'processed']);\n\n" .
-                       "        return response()->json([\n" .
-                       "            'message' => 'Action completed successfully',\n" .
-                       "        ]);\n" .
-                       "    }";
+                $modelVar = $modelName ? '$'.Str::camel($modelName) : '$model';
+                $modelParam = $modelName ? Str::studly($modelName).' '.$modelVar : 'Model '.$modelVar;
+
+                return "    public function handle(ActionRequest \$request, {$modelParam}): JsonResponse\n".
+                       '    {'.
+                       $validation.
+                       "\n        // Perform action on single model\n".
+                       "        // \$model->update(['status' => 'processed']);\n\n".
+                       "        return response()->json([\n".
+                       "            'message' => 'Action completed successfully',\n".
+                       "        ]);\n".
+                       '    }';
 
             case 'standalone':
-                return "    public function handle(ActionRequest \$request): JsonResponse\n" .
-                       "    {" .
-                       $validation .
-                       "\n        // Perform standalone action (no models involved)\n" .
-                       "        // Example: \$request->user()->update(['some_field' => 'value']);\n\n" .
-                       "        return response()->json([\n" .
-                       "            'message' => 'Action completed successfully',\n" .
-                       "        ]);\n" .
-                       "    }";
+                return "    public function handle(ActionRequest \$request): JsonResponse\n".
+                       '    {'.
+                       $validation.
+                       "\n        // Perform standalone action (no models involved)\n".
+                       "        // Example: \$request->user()->update(['some_field' => 'value']);\n\n".
+                       "        return response()->json([\n".
+                       "            'message' => 'Action completed successfully',\n".
+                       "        ]);\n".
+                       '    }';
 
             case 'index':
             case 'destructive':
             default:
-                $collectionVar = $modelName ? '$' . Str::camel(Str::plural($modelName)) : '$models';
-                return "    public function handle(ActionRequest \$request, Collection {$collectionVar}): JsonResponse\n" .
-                       "    {" .
-                       $validation .
-                       "\n        // Perform action on multiple models\n" .
-                       "        // {$collectionVar}->each(function (\$model) {\n" .
-                       "        //     \$model->update(['status' => 'processed']);\n" .
-                       "        // });\n\n" .
-                       "        return response()->json([\n" .
-                       "            'message' => 'Action completed successfully',\n" .
-                       "            'processed' => {$collectionVar}->count(),\n" .
-                       "        ]);\n" .
-                       "    }";
+                $collectionVar = $modelName ? '$'.Str::camel(Str::plural($modelName)) : '$models';
+
+                return "    public function handle(ActionRequest \$request, Collection {$collectionVar}): JsonResponse\n".
+                       '    {'.
+                       $validation.
+                       "\n        // Perform action on multiple models\n".
+                       "        // {$collectionVar}->each(function (\$model) {\n".
+                       "        //     \$model->update(['status' => 'processed']);\n".
+                       "        // });\n\n".
+                       "        return response()->json([\n".
+                       "            'message' => 'Action completed successfully',\n".
+                       "            'processed' => {$collectionVar}->count(),\n".
+                       "        ]);\n".
+                       '    }';
         }
     }
 
@@ -325,7 +327,7 @@ class GenerateActionTool extends Tool
         $rulesArray = [];
         foreach ($validationRules as $field => $rules) {
             if (is_array($rules)) {
-                $ruleString = "['" . implode("', '", $rules) . "']";
+                $ruleString = "['".implode("', '", $rules)."']";
             } else {
                 $ruleString = "'{$rules}'";
             }
@@ -334,21 +336,21 @@ class GenerateActionTool extends Tool
 
         $rulesString = implode(",\n", $rulesArray);
 
-        return "    public function rules(): array\n" .
-               "    {\n" .
-               "        return [\n" .
-               $rulesString . "\n" .
-               "        ];\n" .
-               "    }";
+        return "    public function rules(): array\n".
+               "    {\n".
+               "        return [\n".
+               $rulesString."\n".
+               "        ];\n".
+               '    }';
     }
 
     protected function generateIndexQueryMethod(): string
     {
-        return "    public static function indexQuery(RestifyRequest \$request, \$query)\n" .
-               "    {\n" .
-               "        // Customize the query before models are retrieved\n" .
-               "        // Example: \$query->where('status', 'active');\n" .
-               "    }";
+        return "    public static function indexQuery(RestifyRequest \$request, \$query)\n".
+               "    {\n".
+               "        // Customize the query before models are retrieved\n".
+               "        // Example: \$query->where('status', 'active');\n".
+               '    }';
     }
 
     protected function resolveModelClass(string $modelName): ?string
@@ -356,8 +358,8 @@ class GenerateActionTool extends Tool
         $commonLocations = [
             "App\\Models\\{$modelName}",
             "App\\{$modelName}",
-            $this->getRootNamespace() . "\\Models\\{$modelName}",
-            $this->getRootNamespace() . "\\{$modelName}",
+            $this->getRootNamespace()."\\Models\\{$modelName}",
+            $this->getRootNamespace()."\\{$modelName}",
         ];
 
         foreach ($commonLocations as $location) {
@@ -373,7 +375,7 @@ class GenerateActionTool extends Tool
     {
         // Ensure directory exists
         $directory = dirname($filePath);
-        if (!File::isDirectory($directory)) {
+        if (! File::isDirectory($directory)) {
             File::makeDirectory($directory, 0755, true);
         }
 
@@ -389,7 +391,7 @@ class GenerateActionTool extends Tool
         // Build imports
         $imports = array_unique($content['imports']);
         sort($imports);
-        $importsString = implode("\n", array_map(fn($import) => "use {$import};", $imports));
+        $importsString = implode("\n", array_map(fn ($import) => "use {$import};", $imports));
 
         // Build class declaration
         $classDeclaration = "class {$content['action_name']}";
@@ -399,7 +401,7 @@ class GenerateActionTool extends Tool
 
         // Build properties
         $propertiesString = empty($content['properties']) ? '' :
-            implode("\n", $content['properties']) . "\n";
+            implode("\n", $content['properties'])."\n";
 
         // Build methods
         $methodsString = implode("\n\n", $content['methods']);
@@ -444,7 +446,7 @@ namespace {$content['namespace']};
                 $response .= "```\n\n";
                 $response .= "2. Call via API:\n";
                 $response .= "```http\n";
-                $response .= "POST: api/restify/models/actions?action=" . Str::kebab(str_replace('Action', '', $actionDetails['action_name'])) . "\n";
+                $response .= 'POST: api/restify/models/actions?action='.Str::kebab(str_replace('Action', '', $actionDetails['action_name']))."\n";
                 $response .= "{\n";
                 $response .= "  \"repositories\": [1, 2, 3]\n";
                 $response .= "}\n";
@@ -465,7 +467,7 @@ namespace {$content['namespace']};
                 $response .= "```\n\n";
                 $response .= "2. Call via API:\n";
                 $response .= "```http\n";
-                $response .= "POST: api/restify/models/1/actions?action=" . Str::kebab(str_replace('Action', '', $actionDetails['action_name'])) . "\n";
+                $response .= 'POST: api/restify/models/1/actions?action='.Str::kebab(str_replace('Action', '', $actionDetails['action_name']))."\n";
                 $response .= "{}\n";
                 $response .= "```\n";
                 break;
@@ -484,7 +486,7 @@ namespace {$content['namespace']};
                 $response .= "```\n\n";
                 $response .= "2. Call via API:\n";
                 $response .= "```http\n";
-                $response .= "POST: api/restify/models/actions?action=" . Str::kebab(str_replace('Action', '', $actionDetails['action_name'])) . "\n";
+                $response .= 'POST: api/restify/models/actions?action='.Str::kebab(str_replace('Action', '', $actionDetails['action_name']))."\n";
                 $response .= "{}\n";
                 $response .= "```\n";
                 break;
@@ -527,7 +529,7 @@ namespace {$content['namespace']};
 
         $response .= "## Action Features Generated\n\n";
 
-        if (!empty($content['properties'])) {
+        if (! empty($content['properties'])) {
             $response .= "✅ **Properties**: Custom URI key and action settings\n";
         }
 

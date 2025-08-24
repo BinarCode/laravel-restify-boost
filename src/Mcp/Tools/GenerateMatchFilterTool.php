@@ -27,7 +27,7 @@ class GenerateMatchFilterTool extends Tool
                 'required' => true,
             ],
             'attribute' => [
-                'type' => 'string', 
+                'type' => 'string',
                 'description' => 'The database attribute/column to filter on (e.g., status, active, category)',
                 'required' => true,
             ],
@@ -70,10 +70,10 @@ class GenerateMatchFilterTool extends Tool
 
         // Generate the filter class
         $filterClass = $this->generateFilterClass($name, $attribute, $type, $partial, $customLogic, $namespace);
-        
+
         // Generate repository integration example
         $repositoryExample = $this->generateRepositoryExample($attribute, $name, $type, $repository);
-        
+
         // Generate usage examples
         $usageExamples = $this->generateUsageExamples($attribute, $type);
 
@@ -89,7 +89,7 @@ class GenerateMatchFilterTool extends Tool
     private function generateFilterClass(string $name, string $attribute, string $type, bool $partial, ?string $customLogic, string $namespace): string
     {
         $className = $this->ensureFilterSuffix($name);
-        
+
         if ($type === 'custom') {
             return $this->generateCustomFilterClass($className, $attribute, $customLogic, $namespace);
         }
@@ -99,8 +99,8 @@ class GenerateMatchFilterTool extends Tool
 
     private function generateCustomFilterClass(string $className, string $attribute, ?string $customLogic, string $namespace): string
     {
-        $logicComment = $customLogic ? "// {$customLogic}" : "// Add your custom filtering logic here";
-        
+        $logicComment = $customLogic ? "// {$customLogic}" : '// Add your custom filtering logic here';
+
         return "<?php
 
 declare(strict_types=1);
@@ -166,7 +166,7 @@ class {$className} extends MatchFilter
     private function generateSimpleMatchFilter(string $className, string $attribute, string $type, bool $partial, string $namespace): string
     {
         $filterLogic = $this->getFilterLogic($attribute, $type, $partial);
-        
+
         return "<?php
 
 declare(strict_types=1);
@@ -208,14 +208,14 @@ class {$className} extends MatchFilter
     private function getFilterLogic(string $attribute, string $type, bool $partial): string
     {
         return match ($type) {
-            'string', 'text' => $partial 
+            'string', 'text' => $partial
                 ? "        return \$query->where('{$attribute}', 'LIKE', \"%{\$value}%\");"
                 : "        return \$query->where('{$attribute}', \$value);",
-            
+
             'int', 'integer' => "        return \$query->where('{$attribute}', (int) \$value);",
-            
+
             'bool', 'boolean' => "        return \$query->where('{$attribute}', filter_var(\$value, FILTER_VALIDATE_BOOLEAN));",
-            
+
             'datetime' => "        // Handle single date or date range
         if (str_contains(\$value, ',')) {
             [\$start, \$end] = explode(',', \$value, 2);
@@ -223,7 +223,7 @@ class {$className} extends MatchFilter
         }
         
         return \$query->whereDate('{$attribute}', \$value);",
-            
+
             'between' => "        // Expects comma-separated values: value1,value2
         if (str_contains(\$value, ',')) {
             [\$start, \$end] = explode(',', \$value, 2);
@@ -231,11 +231,11 @@ class {$className} extends MatchFilter
         }
         
         return \$query->where('{$attribute}', \$value);",
-            
+
             'array' => "        // Handle comma-separated values or array
         \$values = is_array(\$value) ? \$value : explode(',', \$value);
         return \$query->whereIn('{$attribute}', \$values);",
-            
+
             default => "        return \$query->where('{$attribute}', \$value);",
         };
     }
@@ -244,7 +244,7 @@ class {$className} extends MatchFilter
     {
         $className = $this->ensureFilterSuffix($name);
         $repositoryName = $repository ?? 'YourRepository';
-        
+
         // Simple array configuration
         $simpleConfig = "// Option 1: Simple configuration using \$match array
 public static array \$match = [
@@ -284,7 +284,7 @@ public static function matches(): array
     private function generateUsageExamples(string $attribute, string $type): array
     {
         $examples = [];
-        
+
         switch ($type) {
             case 'string':
             case 'text':
@@ -356,7 +356,7 @@ public static function matches(): array
                 $examples[] = [
                     'description' => 'Custom filter usage',
                     'url' => "GET /api/restify/posts?{$attribute}=your_value",
-                    'sql' => "Custom logic defined in your filter class",
+                    'sql' => 'Custom logic defined in your filter class',
                 ];
                 break;
         }
@@ -375,32 +375,32 @@ public static function matches(): array
     {
         $className = $this->ensureFilterSuffix($name);
         $namespacePath = str_replace('\\', '/', str_replace('App\\', 'app/', $namespace));
-        
+
         return "{$namespacePath}/{$className}.php";
     }
 
     private function getInstructions(string $name, string $attribute, string $type): array
     {
         $className = $this->ensureFilterSuffix($name);
-        
+
         return [
-            '1. Save the filter class' => "Save the generated class to the specified file path",
-            '2. Add to repository' => "Add the filter configuration to your repository using either \$match array or matches() method",
-            '3. Test the filter' => "Use the provided URL examples to test your match filter",
-            '4. Customize as needed' => $type === 'custom' 
-                ? "Implement your custom filtering logic in the filter() method"
+            '1. Save the filter class' => 'Save the generated class to the specified file path',
+            '2. Add to repository' => 'Add the filter configuration to your repository using either $match array or matches() method',
+            '3. Test the filter' => 'Use the provided URL examples to test your match filter',
+            '4. Customize as needed' => $type === 'custom'
+                ? 'Implement your custom filtering logic in the filter() method'
                 : "The filter is ready to use with the {$type} type matching",
             '5. Available endpoints' => "Your filter will be available at: GET /api/restify/{repository}?{$attribute}=value",
-            '6. Get available filters' => "List all repository filters: GET /api/restify/{repository}/filters?only=matches",
+            '6. Get available filters' => 'List all repository filters: GET /api/restify/{repository}/filters?only=matches',
         ];
     }
 
     private function ensureFilterSuffix(string $name): string
     {
-        if (!str_ends_with($name, 'Filter')) {
-            return $name . 'Filter';
+        if (! str_ends_with($name, 'Filter')) {
+            return $name.'Filter';
         }
-        
+
         return $name;
     }
 }

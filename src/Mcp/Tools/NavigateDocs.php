@@ -12,9 +12,7 @@ use Laravel\Mcp\Server\Tools\ToolResult;
 
 class NavigateDocs extends Tool
 {
-    public function __construct(protected DocIndexer $indexer)
-    {
-    }
+    public function __construct(protected DocIndexer $indexer) {}
 
     public function description(): string
     {
@@ -39,7 +37,7 @@ class NavigateDocs extends Tool
     }
 
     /**
-     * @param array<string, mixed> $arguments
+     * @param  array<string, mixed>  $arguments
      */
     public function handle(array $arguments): ToolResult|Generator
     {
@@ -111,7 +109,7 @@ class NavigateDocs extends Tool
 
         $totalDocs = array_sum(array_column($categories, 'count'));
         $output .= "**Total documentation files:** {$totalDocs}\n";
-        $output .= "**Categories available:** ".count($categories)."\n\n";
+        $output .= '**Categories available:** '.count($categories)."\n\n";
 
         foreach ($categories as $categoryKey => $categoryInfo) {
             $output .= "## {$categoryInfo['name']} ({$categoryInfo['count']} document(s))\n\n";
@@ -122,7 +120,7 @@ class NavigateDocs extends Tool
                     $doc = $categoryInfo['documents'][$i];
                     $output .= "- **{$doc['title']}**";
                     if (! empty($doc['summary'])) {
-                        $output .= ": ".substr($doc['summary'], 0, 100)."...";
+                        $output .= ': '.substr($doc['summary'], 0, 100).'...';
                     }
                     $output .= "\n";
                 }
@@ -150,7 +148,7 @@ class NavigateDocs extends Tool
         $categories = $this->indexer->getCategories();
 
         if (empty($categories)) {
-            return ToolResult::text("No documentation categories found.");
+            return ToolResult::text('No documentation categories found.');
         }
 
         $output = "# Laravel Restify Documentation Categories\n\n";
@@ -163,9 +161,9 @@ class NavigateDocs extends Tool
             // Show sample topics
             if (! empty($categoryInfo['documents'])) {
                 $sampleTitles = array_slice(array_column($categoryInfo['documents'], 'title'), 0, 3);
-                $output .= "**Sample topics:** ".implode(', ', $sampleTitles);
+                $output .= '**Sample topics:** '.implode(', ', $sampleTitles);
                 if (count($categoryInfo['documents']) > 3) {
-                    $output .= " and more...";
+                    $output .= ' and more...';
                 }
             }
             $output .= "\n\n";
@@ -189,19 +187,19 @@ class NavigateDocs extends Tool
 
             return ToolResult::text(
                 "No documents found in category: **{$category}**\n\n".
-                "**Available categories:** ".implode(', ', $availableCategories)
+                '**Available categories:** '.implode(', ', $availableCategories)
             );
         }
 
         $categoryName = $this->getCategoryName($category);
         $output = "# {$categoryName} Documentation\n\n";
         $output .= "**Category:** {$category}\n";
-        $output .= "**Total documents:** ".count($documents)."\n\n";
+        $output .= '**Total documents:** '.count($documents)."\n\n";
 
         $limitedDocs = array_slice($documents, 0, $limit);
 
         foreach ($limitedDocs as $index => $doc) {
-            $output .= "## ".($index + 1).". {$doc['title']}\n";
+            $output .= '## '.($index + 1).". {$doc['title']}\n";
 
             if ($includeContent) {
                 if (! empty($doc['summary'])) {
@@ -238,7 +236,7 @@ class NavigateDocs extends Tool
                         $langSummary[] = "{$lang} ({$count})";
                     }
 
-                    $output .= "**Code examples:** ".implode(', ', $langSummary)."\n\n";
+                    $output .= '**Code examples:** '.implode(', ', $langSummary)."\n\n";
                 }
             }
 

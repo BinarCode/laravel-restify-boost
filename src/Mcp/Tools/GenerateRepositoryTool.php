@@ -62,7 +62,7 @@ class GenerateRepositoryTool extends Tool
 
             // Step 1: Find and resolve the model
             $modelClass = $this->resolveModelClass($modelName);
-            if (!$modelClass) {
+            if (! $modelClass) {
                 return ToolResult::error("Could not find model: {$modelName}");
             }
 
@@ -78,9 +78,9 @@ class GenerateRepositoryTool extends Tool
             );
 
             // Step 4: Check if repository already exists
-            if (!$force && File::exists($repositoryDetails['file_path'])) {
+            if (! $force && File::exists($repositoryDetails['file_path'])) {
                 return ToolResult::error(
-                    "Repository already exists at: {$repositoryDetails['file_path']}\n" .
+                    "Repository already exists at: {$repositoryDetails['file_path']}\n".
                     "Use 'force: true' to overwrite."
                 );
             }
@@ -100,7 +100,7 @@ class GenerateRepositoryTool extends Tool
             return $this->generateSuccessResponse($modelClass, $repositoryDetails, $repositoryContent);
 
         } catch (\Throwable $e) {
-            return ToolResult::error('Repository generation failed: ' . $e->getMessage());
+            return ToolResult::error('Repository generation failed: '.$e->getMessage());
         }
     }
 
@@ -113,8 +113,8 @@ class GenerateRepositoryTool extends Tool
         $commonLocations = [
             "App\\Models\\{$modelName}",
             "App\\{$modelName}",
-            $this->getRootNamespace() . "\\Models\\{$modelName}",
-            $this->getRootNamespace() . "\\{$modelName}",
+            $this->getRootNamespace()."\\Models\\{$modelName}",
+            $this->getRootNamespace()."\\{$modelName}",
         ];
 
         foreach ($commonLocations as $location) {
@@ -133,12 +133,17 @@ class GenerateRepositoryTool extends Tool
             usort($foundModels, function ($a, $b) {
                 $aInModels = str_contains($a, '\\Models\\');
                 $bInModels = str_contains($b, '\\Models\\');
-                
-                if ($aInModels && !$bInModels) return -1;
-                if (!$aInModels && $bInModels) return 1;
+
+                if ($aInModels && ! $bInModels) {
+                    return -1;
+                }
+                if (! $aInModels && $bInModels) {
+                    return 1;
+                }
+
                 return 0;
             });
-            
+
             return $foundModels[0];
         }
 
@@ -148,9 +153,9 @@ class GenerateRepositoryTool extends Tool
     protected function searchForModelInApp(string $modelName): array
     {
         $models = [];
-        
+
         try {
-            $finder = new Finder();
+            $finder = new Finder;
             $finder->files()
                 ->in(app_path())
                 ->name('*.php')
@@ -160,9 +165,9 @@ class GenerateRepositoryTool extends Tool
                 ->notPath('Providers');
 
             foreach ($finder as $file) {
-                $relativePath = str_replace(app_path() . DIRECTORY_SEPARATOR, '', $file->getRealPath());
+                $relativePath = str_replace(app_path().DIRECTORY_SEPARATOR, '', $file->getRealPath());
                 $relativePath = str_replace(DIRECTORY_SEPARATOR, '/', $relativePath);
-                $className = 'App\\' . str_replace(['/', '.php'], ['\\', ''], $relativePath);
+                $className = 'App\\'.str_replace(['/', '.php'], ['\\', ''], $relativePath);
 
                 if (class_exists($className) && $this->isEloquentModel($className)) {
                     $baseName = class_basename($className);
@@ -184,7 +189,8 @@ class GenerateRepositoryTool extends Tool
     {
         try {
             $reflection = new ReflectionClass($className);
-            return $reflection->isInstantiable() && 
+
+            return $reflection->isInstantiable() &&
                    $reflection->isSubclassOf('Illuminate\\Database\\Eloquent\\Model');
         } catch (\Exception $e) {
             return false;
@@ -194,13 +200,13 @@ class GenerateRepositoryTool extends Tool
     protected function analyzeRepositoryPatterns(): array
     {
         $patterns = [
-            'namespace' => $this->getRootNamespace() . '\\Restify',
+            'namespace' => $this->getRootNamespace().'\\Restify',
             'pattern' => 'flat',
             'base_path' => app_path('Restify'),
         ];
 
         try {
-            $finder = new Finder();
+            $finder = new Finder;
             $finder->files()
                 ->in(app_path())
                 ->name('*Repository.php')
@@ -209,27 +215,27 @@ class GenerateRepositoryTool extends Tool
 
             $repositoryPaths = [];
             foreach ($finder as $file) {
-                $relativePath = str_replace(app_path() . DIRECTORY_SEPARATOR, '', $file->getRealPath());
+                $relativePath = str_replace(app_path().DIRECTORY_SEPARATOR, '', $file->getRealPath());
                 $relativePath = str_replace(DIRECTORY_SEPARATOR, '/', $relativePath);
-                
+
                 $pathParts = explode('/', $relativePath);
                 array_pop($pathParts); // Remove filename
-                
-                if (!empty($pathParts)) {
-                    $namespace = $this->getRootNamespace() . '\\' . str_replace('/', '\\', implode('/', $pathParts));
+
+                if (! empty($pathParts)) {
+                    $namespace = $this->getRootNamespace().'\\'.str_replace('/', '\\', implode('/', $pathParts));
                     $basePath = app_path(implode('/', $pathParts));
-                    
+
                     $repositoryPaths[] = [
                         'namespace' => $namespace,
                         'base_path' => $basePath,
-                        'depth' => count($pathParts)
+                        'depth' => count($pathParts),
                     ];
                 }
             }
 
-            if (!empty($repositoryPaths)) {
+            if (! empty($repositoryPaths)) {
                 // Use the most common pattern (or deepest if tie)
-                usort($repositoryPaths, fn($a, $b) => $b['depth'] <=> $a['depth']);
+                usort($repositoryPaths, fn ($a, $b) => $b['depth'] <=> $a['depth']);
                 $patterns = $repositoryPaths[0];
             }
 
@@ -247,16 +253,16 @@ class GenerateRepositoryTool extends Tool
         array $repositoryInfo
     ): array {
         $modelBaseName = class_basename($modelClass);
-        $repositoryName = $customRepositoryName ?: $modelBaseName . 'Repository';
+        $repositoryName = $customRepositoryName ?: $modelBaseName.'Repository';
         $namespace = $customNamespace ?: $repositoryInfo['namespace'];
         $basePath = $repositoryInfo['base_path'];
 
         // Ensure repository name ends with 'Repository'
-        if (!str_ends_with($repositoryName, 'Repository')) {
+        if (! str_ends_with($repositoryName, 'Repository')) {
             $repositoryName .= 'Repository';
         }
 
-        $filePath = $basePath . '/' . $repositoryName . '.php';
+        $filePath = $basePath.'/'.$repositoryName.'.php';
 
         return [
             'repository_name' => $repositoryName,
@@ -310,10 +316,14 @@ class GenerateRepositoryTool extends Tool
         $imports = [];
 
         foreach ($columns as $column) {
-            if ($column === 'id') continue;
+            if ($column === 'id') {
+                continue;
+            }
 
             // Skip foreign key columns as they'll be handled by relationships
-            if (str_ends_with($column, '_id') && $column !== 'id') continue;
+            if (str_ends_with($column, '_id') && $column !== 'id') {
+                continue;
+            }
 
             $field = $this->generateFieldForColumn($table, $column);
             if ($field) {
@@ -395,9 +405,9 @@ class GenerateRepositoryTool extends Tool
             }
 
             // Add required validation for non-nullable fields
-            if (!$isNullable && 
-                !in_array($column, ['created_at', 'updated_at', 'deleted_at', 'remember_token']) &&
-                !str_contains($field, 'readonly()')) {
+            if (! $isNullable &&
+                ! in_array($column, ['created_at', 'updated_at', 'deleted_at', 'remember_token']) &&
+                ! str_contains($field, 'readonly()')) {
                 $field .= '->required()';
             }
 
@@ -418,16 +428,16 @@ class GenerateRepositoryTool extends Tool
         try {
             $connection = Schema::getConnection();
             $dbName = $connection->getDatabaseName();
-            
-            $results = $connection->select("
+
+            $results = $connection->select('
                 SELECT IS_NULLABLE 
                 FROM INFORMATION_SCHEMA.COLUMNS 
                 WHERE TABLE_SCHEMA = ? 
                 AND TABLE_NAME = ? 
                 AND COLUMN_NAME = ?
-            ", [$dbName, $table, $column]);
+            ', [$dbName, $table, $column]);
 
-            return !empty($results) && $results[0]->IS_NULLABLE === 'YES';
+            return ! empty($results) && $results[0]->IS_NULLABLE === 'YES';
         } catch (\Exception $e) {
             return false;
         }
@@ -458,7 +468,7 @@ class GenerateRepositoryTool extends Tool
         }
 
         // Add relationship field imports
-        if (!empty($relationships)) {
+        if (! empty($relationships)) {
             $imports[] = 'Binaryk\\LaravelRestify\\Fields\\BelongsTo';
             $imports[] = 'Binaryk\\LaravelRestify\\Fields\\HasMany';
         }
@@ -476,7 +486,7 @@ class GenerateRepositoryTool extends Tool
 
         // Try to find the related model
         $relatedModel = $this->findRelatedModel($modelName);
-        if (!$relatedModel) {
+        if (! $relatedModel) {
             return [
                 'code' => "            BelongsTo::make('{$relationName}'),",
                 'imports' => [],
@@ -493,21 +503,23 @@ class GenerateRepositoryTool extends Tool
     {
         $relationships = [];
         $modelBaseName = class_basename($modelClass);
-        $expectedForeignKey = Str::snake($modelBaseName) . '_id';
+        $expectedForeignKey = Str::snake($modelBaseName).'_id';
 
         try {
             $tables = Schema::getAllTables();
-            
+
             foreach ($tables as $tableObj) {
-                $otherTable = is_object($tableObj) ? 
-                    ($tableObj->name ?? $tableObj->tablename ?? reset($tableObj)) : 
+                $otherTable = is_object($tableObj) ?
+                    ($tableObj->name ?? $tableObj->tablename ?? reset($tableObj)) :
                     $tableObj;
 
-                if ($otherTable === $table) continue;
+                if ($otherTable === $table) {
+                    continue;
+                }
 
                 if (Schema::hasColumn($otherTable, $expectedForeignKey)) {
                     $relationName = Str::camel(Str::plural($otherTable));
-                    
+
                     $relationships[] = [
                         'code' => "            HasMany::make('{$relationName}'),",
                         'imports' => [],
@@ -526,8 +538,8 @@ class GenerateRepositoryTool extends Tool
         $possibleClasses = [
             "App\\Models\\{$modelName}",
             "App\\{$modelName}",
-            $this->getRootNamespace() . "\\Models\\{$modelName}",
-            $this->getRootNamespace() . "\\{$modelName}",
+            $this->getRootNamespace()."\\Models\\{$modelName}",
+            $this->getRootNamespace()."\\{$modelName}",
         ];
 
         foreach ($possibleClasses as $class) {
@@ -543,7 +555,7 @@ class GenerateRepositoryTool extends Tool
     {
         // Ensure directory exists
         $directory = dirname($filePath);
-        if (!File::isDirectory($directory)) {
+        if (! File::isDirectory($directory)) {
             File::makeDirectory($directory, 0755, true);
         }
 
@@ -560,14 +572,14 @@ class GenerateRepositoryTool extends Tool
         $imports = array_unique($imports);
         sort($imports);
 
-        $importsString = implode("\n", array_map(fn($import) => "use {$import};", $imports));
+        $importsString = implode("\n", array_map(fn ($import) => "use {$import};", $imports));
 
-        $fieldsString = empty($content['fields']) ? 
-            "            id()," : 
+        $fieldsString = empty($content['fields']) ?
+            '            id(),' :
             implode("\n", $content['fields']);
 
         $relationshipsSection = '';
-        if (!empty($content['relationships'])) {
+        if (! empty($content['relationships'])) {
             $relationshipsString = implode("\n", $content['relationships']);
             $relationshipsSection = "\n\n    public static function include(): array\n    {\n        return [\n{$relationshipsString}\n        ];\n    }";
         }
@@ -605,13 +617,13 @@ class {$content['repository_name']} extends Repository
         $response .= "**Namespace:** `{$repositoryDetails['namespace']}`\n\n";
 
         $response .= "## Generated Features\n\n";
-        
-        if (!empty($content['fields'])) {
+
+        if (! empty($content['fields'])) {
             $fieldCount = count($content['fields']);
             $response .= "✅ **Fields:** Generated {$fieldCount} field(s) from model schema\n";
         }
 
-        if (!empty($content['relationships'])) {
+        if (! empty($content['relationships'])) {
             $relationCount = count($content['relationships']);
             $response .= "✅ **Relationships:** Generated {$relationCount} relationship(s)\n";
         }
@@ -622,7 +634,7 @@ class {$content['repository_name']} extends Repository
         $response .= "3. **Customize fields and relationships** as needed\n";
         $response .= "4. **Add validation rules, authorization, and custom logic**\n\n";
 
-        if (!empty($content['fields'])) {
+        if (! empty($content['fields'])) {
             $response .= "## Generated Fields\n\n";
             foreach ($content['fields'] as $field) {
                 $fieldLine = trim($field);
@@ -631,7 +643,7 @@ class {$content['repository_name']} extends Repository
             $response .= "\n";
         }
 
-        if (!empty($content['relationships'])) {
+        if (! empty($content['relationships'])) {
             $response .= "## Generated Relationships\n\n";
             foreach ($content['relationships'] as $relationship) {
                 $relationshipLine = trim($relationship);
@@ -644,7 +656,7 @@ class {$content['repository_name']} extends Repository
         $response .= "Generate related components:\n";
         $response .= "- **Policy:** `php artisan restify:policy {$repositoryDetails['model_base_name']}`\n";
         $response .= "- **Factory:** `php artisan make:factory {$repositoryDetails['model_base_name']}Factory`\n";
-        $response .= "- **Migration:** `php artisan make:migration create_" . Str::snake(Str::plural($repositoryDetails['model_base_name'])) . "_table`\n";
+        $response .= '- **Migration:** `php artisan make:migration create_'.Str::snake(Str::plural($repositoryDetails['model_base_name']))."_table`\n";
 
         return ToolResult::text($response);
     }
