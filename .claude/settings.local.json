@@ -12,7 +12,9 @@
       "Bash(git add:*)",
       "Bash(find:*)",
       "Bash(grep:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(yamllint:*)",
+      "Bash(python3:*)"
     ],
     "deny": []
   }
