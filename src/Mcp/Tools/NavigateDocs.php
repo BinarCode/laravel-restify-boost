@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace BinarCode\LaravelRestifyMcp\Mcp\Tools;
+namespace BinarCode\RestifyBoost\Mcp\Tools;
 
-use BinarCode\LaravelRestifyMcp\Services\DocIndexer;
+use BinarCode\RestifyBoost\Services\DocIndexer;
 use Generator;
 use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\ToolInputSchema;

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace BinarCode\LaravelRestifyMcp\Mcp;
+namespace BinarCode\RestifyBoost\Mcp;
 
 use Laravel\Mcp\Server;
 
@@ -38,7 +38,7 @@ class RestifyDocs extends Server
         $toolDir = new \DirectoryIterator($toolsPath);
         foreach ($toolDir as $toolFile) {
             if ($toolFile->isFile() && $toolFile->getExtension() === 'php') {
-                $fqdn = 'BinarCode\\LaravelRestifyMcp\\Mcp\\Tools\\'.$toolFile->getBasename('.php');
+                $fqdn = 'BinarCode\\RestifyBoost\\Mcp\\Tools\\'.$toolFile->getBasename('.php');
                 if (class_exists($fqdn) && ! in_array($fqdn, $excludedTools, true)) {
                     $this->addTool($fqdn);
                 }
@@ -70,7 +70,7 @@ class RestifyDocs extends Server
         $resourceDir = new \DirectoryIterator($resourcesPath);
         foreach ($resourceDir as $resourceFile) {
             if ($resourceFile->isFile() && $resourceFile->getExtension() === 'php') {
-                $fqdn = 'BinarCode\\LaravelRestifyMcp\\Mcp\\Resources\\'.$resourceFile->getBasename('.php');
+                $fqdn = 'BinarCode\\RestifyBoost\\Mcp\\Resources\\'.$resourceFile->getBasename('.php');
                 if (class_exists($fqdn) && ! in_array($fqdn, $excludedResources, true)) {
                     $this->addResource($fqdn);
                 }
@@ -102,7 +102,7 @@ class RestifyDocs extends Server
         $promptDir = new \DirectoryIterator($promptsPath);
         foreach ($promptDir as $promptFile) {
             if ($promptFile->isFile() && $promptFile->getExtension() === 'php') {
-                $fqdn = 'BinarCode\\LaravelRestifyMcp\\Mcp\\Prompts\\'.$promptFile->getBasename('.php');
+                $fqdn = 'BinarCode\\RestifyBoost\\Mcp\\Prompts\\'.$promptFile->getBasename('.php');
                 if (class_exists($fqdn) && ! in_array($fqdn, $excludedPrompts, true)) {
                     $this->addPrompt($fqdn);
                 }

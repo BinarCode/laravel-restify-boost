@@ -2,25 +2,25 @@
 
 declare(strict_types=1);
 
-namespace BinarCode\LaravelRestifyMcp;
+namespace BinarCode\RestifyBoost;
 
-use BinarCode\LaravelRestifyMcp\Commands\ExecuteToolCommand;
-use BinarCode\LaravelRestifyMcp\Commands\InstallCommand;
-use BinarCode\LaravelRestifyMcp\Commands\StartCommand;
-use BinarCode\LaravelRestifyMcp\Mcp\RestifyDocs;
-use BinarCode\LaravelRestifyMcp\Services\DocCache;
-use BinarCode\LaravelRestifyMcp\Services\DocIndexer;
-use BinarCode\LaravelRestifyMcp\Services\DocParser;
+use BinarCode\RestifyBoost\Commands\ExecuteToolCommand;
+use BinarCode\RestifyBoost\Commands\InstallCommand;
+use BinarCode\RestifyBoost\Commands\StartCommand;
+use BinarCode\RestifyBoost\Mcp\RestifyDocs;
+use BinarCode\RestifyBoost\Services\DocCache;
+use BinarCode\RestifyBoost\Services\DocIndexer;
+use BinarCode\RestifyBoost\Services\DocParser;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Mcp\Server\Facades\Mcp;
 
-class LaravelRestifyMcpServiceProvider extends ServiceProvider
+class RestifyBoostServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
         $this->mergeConfigFrom(
-            __DIR__.'/../config/restify-mcp.php',
-            'restify-mcp'
+            __DIR__.'/../config/restify-boost.php',
+            'restify-boost'
         );
 
         if (! $this->shouldRun()) {
@@ -50,8 +50,8 @@ class LaravelRestifyMcpServiceProvider extends ServiceProvider
     {
         if ($this->app->runningInConsole()) {
             $this->publishes([
-                __DIR__.'/../config/restify-mcp.php' => config_path('restify-mcp.php'),
-            ], 'restify-mcp-config');
+                __DIR__.'/../config/restify-boost.php' => config_path('restify-boost.php'),
+            ], 'restify-boost-config');
         }
     }
 
@@ -68,7 +68,7 @@ class LaravelRestifyMcpServiceProvider extends ServiceProvider
 
     private function shouldRun(): bool
     {
-        if (! config('restify-mcp.enabled', true)) {
+        if (! config('restify-boost.enabled', true)) {
             return false;
         }
 

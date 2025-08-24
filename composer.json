@@ -1,6 +1,6 @@
 {
-    "name": "binarcode/laravel-restify-mcp",
-    "description": "Laravel Restify MCP server providing comprehensive documentation access through the Model Context Protocol for AI assistants.",
+    "name": "binarcode/restify-boost",
+    "description": "Restify Boost - AI-powered Laravel Restify assistant providing comprehensive documentation access and code generation tools.",
     "keywords": [
         "laravel",
         "restify",
@@ -8,7 +8,7 @@
         "documentation",
         "ai"
     ],
-    "homepage": "https://github.com/binarcode/laravel-restify-mcp",
+    "homepage": "https://github.com/binarcode/restify-boost",
     "license": "MIT",
     "authors": [
         {
@@ -41,12 +41,12 @@
     },
     "autoload": {
         "psr-4": {
-            "BinarCode\\LaravelRestifyMcp\\": "src/"
+            "BinarCode\\RestifyBoost\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "BinarCode\\LaravelRestifyMcp\\Tests\\": "tests/"
+            "BinarCode\\RestifyBoost\\Tests\\": "tests/"
         }
     },
     "scripts": {
@@ -76,7 +76,7 @@
         },
         "laravel": {
             "providers": [
-                "BinarCode\\LaravelRestifyMcp\\LaravelRestifyMcpServiceProvider"
+                "BinarCode\\RestifyBoost\\RestifyBoostServiceProvider"
             ]
         }
     },

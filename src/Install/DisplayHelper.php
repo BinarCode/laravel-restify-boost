@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace BinarCode\LaravelRestifyMcp\Install;
+namespace BinarCode\RestifyBoost\Install;
 
 use InvalidArgumentException;
 

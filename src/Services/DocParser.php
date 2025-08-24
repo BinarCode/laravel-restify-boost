@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace BinarCode\LaravelRestifyMcp\Services;
+namespace BinarCode\RestifyBoost\Services;
 
 use Symfony\Component\Yaml\Yaml;
 

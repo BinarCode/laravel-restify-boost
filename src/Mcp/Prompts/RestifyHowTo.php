@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace BinarCode\LaravelRestifyMcp\Mcp\Prompts;
+namespace BinarCode\RestifyBoost\Mcp\Prompts;
 
-use BinarCode\LaravelRestifyMcp\Services\DocIndexer;
+use BinarCode\RestifyBoost\Services\DocIndexer;
 use Laravel\Mcp\Server\Prompt;
 use Laravel\Mcp\Server\Prompts\PromptInputSchema;
 use Laravel\Mcp\Server\Prompts\PromptResult;

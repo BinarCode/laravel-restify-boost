@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace BinarCode\LaravelRestifyMcp\Mcp;
+namespace BinarCode\RestifyBoost\Mcp;
 
 use Symfony\Component\Finder\Finder;
 
@@ -69,7 +69,7 @@ class ToolRegistry
             ->name('*.php');
 
         foreach ($finder as $toolFile) {
-            $fullyClassifiedClassName = 'BinarCode\\LaravelRestifyMcp\\Mcp\\Tools\\'.$toolFile->getBasename('.php');
+            $fullyClassifiedClassName = 'BinarCode\\RestifyBoost\\Mcp\\Tools\\'.$toolFile->getBasename('.php');
             if (class_exists($fullyClassifiedClassName)) {
                 $tools[] = $fullyClassifiedClassName;
             }

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace BinarCode\LaravelRestifyMcp\Concerns;
+namespace BinarCode\RestifyBoost\Concerns;
 
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;

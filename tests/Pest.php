@@ -1,5 +1,5 @@
 <?php
 
-use BinarCode\LaravelRestifyMcp\Tests\TestCase;
+use BinarCode\RestifyBoost\Tests\TestCase;
 
 uses(TestCase::class)->in(__DIR__);

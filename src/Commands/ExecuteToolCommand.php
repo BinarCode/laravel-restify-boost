@@ -2,21 +2,21 @@
 
 declare(strict_types=1);
 
-namespace BinarCode\LaravelRestifyMcp\Commands;
+namespace BinarCode\RestifyBoost\Commands;
 
-use BinarCode\LaravelRestifyMcp\Mcp\RestifyDocs;
-use BinarCode\LaravelRestifyMcp\Mcp\Tools\GenerateActionTool;
-use BinarCode\LaravelRestifyMcp\Mcp\Tools\GenerateGetterTool;
-use BinarCode\LaravelRestifyMcp\Mcp\Tools\GenerateRepositoryTool;
-use BinarCode\LaravelRestifyMcp\Mcp\Tools\GetCodeExamples;
-use BinarCode\LaravelRestifyMcp\Mcp\Tools\NavigateDocs;
-use BinarCode\LaravelRestifyMcp\Mcp\Tools\SearchRestifyDocs;
+use BinarCode\RestifyBoost\Mcp\RestifyDocs;
+use BinarCode\RestifyBoost\Mcp\Tools\GenerateActionTool;
+use BinarCode\RestifyBoost\Mcp\Tools\GenerateGetterTool;
+use BinarCode\RestifyBoost\Mcp\Tools\GenerateRepositoryTool;
+use BinarCode\RestifyBoost\Mcp\Tools\GetCodeExamples;
+use BinarCode\RestifyBoost\Mcp\Tools\NavigateDocs;
+use BinarCode\RestifyBoost\Mcp\Tools\SearchRestifyDocs;
 use Illuminate\Console\Command;
 use Laravel\Mcp\Server\Tools\ToolResult;
 
 class ExecuteToolCommand extends Command
 {
-    protected $signature = 'restify-mcp:execute 
+    protected $signature = 'restify-boost:execute 
                           {tool : The MCP tool to execute (search-restify-docs, get-code-examples, navigate-docs, generate-repository, generate-action, generate-getter)}
                           {--queries=* : Search queries (for search-restify-docs)}
                           {--topic= : Topic for code examples (for get-code-examples)}

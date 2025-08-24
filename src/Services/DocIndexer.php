@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace BinarCode\LaravelRestifyMcp\Services;
+namespace BinarCode\RestifyBoost\Services;
 
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;

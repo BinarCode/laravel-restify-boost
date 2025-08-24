@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace BinarCode\LaravelRestifyMcp\Install\CodeEnvironment;
+namespace BinarCode\RestifyBoost\Install\CodeEnvironment;
 
-use BinarCode\LaravelRestifyMcp\Contracts\McpClient;
+use BinarCode\RestifyBoost\Contracts\McpClient;
 
 class Cursor extends CodeEnvironment implements McpClient
 {
