@@ -37,9 +37,9 @@ class GenerateActionTool extends Tool
                 'additionalProperties' => [
                     'type' => ['string', 'array'],
                     'items' => [
-                        'type' => 'string'
-                    ]
-                ]
+                        'type' => 'string',
+                    ],
+                ],
             ])
             ->optional()
             ->string('uri_key')

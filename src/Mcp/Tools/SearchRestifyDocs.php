@@ -33,9 +33,9 @@ class SearchRestifyDocs extends Tool
                 'type' => 'array',
                 'items' => [
                     'type' => 'string',
-                    'description' => 'Search query string - extract key terms from user questions'
+                    'description' => 'Search query string - extract key terms from user questions',
                 ],
-                'minItems' => 1
+                'minItems' => 1,
             ])->required()
             ->string('question_type')
             ->description('Type of question being asked: "count" (how many types), "list" (what are available), "howto" (how to do something), "concept" (explain concept), "example" (show examples)')
