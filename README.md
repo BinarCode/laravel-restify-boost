@@ -7,7 +7,7 @@ The first fully customizable Laravel [JSON:API](https://jsonapi.org) builder wit
 
 <div>
 <a href="https://restifytemplates.com">
-<img alt="Save weeks of API development" src="src/Docs/starter-kit.png">
+<img alt="Save weeks of API development" src="/src/Docs/starter-kit.png">
 </a>
 </div>
 
