@@ -1,13 +1,13 @@
 # Restify Boost
 
-[![Latest Version on Packagist](https://img.shields.io/packagist/v/binarcode/restify-boost.svg?style=flat-square)](https://packagist.org/packages/binarcode/restify-boost)
-[![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/binarcode/restify-boost/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/binarcode/restify-boost/actions?query=workflow%3Arun-tests+branch%3Amain)
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/binarcode/laravel-restify-boost.svg?style=flat-square)](https://packagist.org/packages/binarcode/restify-boost)
+[![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/binarcode/restify-restify-boost/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/binarcode/restify-boost/actions?query=workflow%3Arun-tests+branch%3Amain)
 
 The first fully customizable Laravel [JSON:API](https://jsonapi.org) builder with MCP and GraphQL support. "CRUD" and protect your resources with 0 (zero) extra line of code.
 
 <div>
 <a href="https://restifytemplates.com">
-<img alt="Save weeks of API development" src="/docs/starter-kit.png">
+<img alt="Save weeks of API development" src="src/Docs/starter-kit.png">
 </a>
 </div>
 
