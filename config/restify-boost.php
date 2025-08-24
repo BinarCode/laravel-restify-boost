@@ -104,7 +104,7 @@ return [
         */
         'paths' => [
             'primary' => env('RESTIFY_DOCS_PATH', base_path('vendor/binaryk/laravel-restify/docs-v2/content/en')),
-            'fallback' => base_path('src/Docs/en'),
+            'fallback' => __DIR__.'/../src/Docs/en',
         ],
 
         /*

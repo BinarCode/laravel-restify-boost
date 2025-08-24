@@ -114,7 +114,7 @@ class SearchRestifyDocs extends Tool
 
         // Scan for markdown files in documentation directories
         foreach ([$primaryPath, $fallbackPath] as $basePath) {
-            if (is_dir($basePath)) {
+            if ($basePath && is_string($basePath) && is_dir($basePath)) {
                 $paths = array_merge($paths, $this->scanDirectoryForMarkdown($basePath));
             }
         }
