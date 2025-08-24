@@ -50,7 +50,9 @@
         }
     },
     "scripts": {
-        "post-autoload-dump": "@composer run prepare",
+        "post-autoload-dump": [
+            "@php -r \"file_exists('vendor/bin/testbench') && passthru('vendor/bin/testbench package:discover --ansi') || exit(0);\""
+        ],
         "prepare": "@php vendor/bin/testbench package:discover --ansi",
         "lint": [
             "vendor/bin/pint",
