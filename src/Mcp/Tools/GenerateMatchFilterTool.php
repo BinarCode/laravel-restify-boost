@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace BinarCode\LaravelRestifyMcp\Mcp\Tools;
 
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\ToolResult;
 
 class GenerateMatchFilterTool extends Tool
 {
@@ -58,7 +59,7 @@ class GenerateMatchFilterTool extends Tool
         ];
     }
 
-    public function handle(array $arguments): array
+    public function handle(array $arguments): \Laravel\Mcp\Server\Tools\ToolResult
     {
         $name = $arguments['name'];
         $attribute = $arguments['attribute'];
@@ -77,13 +78,13 @@ class GenerateMatchFilterTool extends Tool
         // Generate usage examples
         $usageExamples = $this->generateUsageExamples($attribute, $type);
 
-        return [
+        return ToolResult::content([
             'filter_class' => $filterClass,
             'repository_integration' => $repositoryExample,
             'usage_examples' => $usageExamples,
             'file_path' => $this->getFilePath($name, $namespace),
             'instructions' => $this->getInstructions($name, $attribute, $type),
-        ];
+        ]);
     }
 
     private function generateFilterClass(string $name, string $attribute, string $type, bool $partial, ?string $customLogic, string $namespace): string
