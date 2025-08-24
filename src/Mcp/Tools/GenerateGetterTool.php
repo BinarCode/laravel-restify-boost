@@ -62,14 +62,14 @@ class GenerateGetterTool extends Tool
 
             // Validate getter type
             $validGetterTypes = ['invokable', 'extended'];
-            if (!in_array($getterType, $validGetterTypes)) {
-                return ToolResult::error('Invalid getter type. Must be one of: ' . implode(', ', $validGetterTypes));
+            if (! in_array($getterType, $validGetterTypes)) {
+                return ToolResult::error('Invalid getter type. Must be one of: '.implode(', ', $validGetterTypes));
             }
 
             // Validate scope
             $validScopes = ['index', 'show', 'both'];
-            if (!in_array($scope, $validScopes)) {
-                return ToolResult::error('Invalid scope. Must be one of: ' . implode(', ', $validScopes));
+            if (! in_array($scope, $validScopes)) {
+                return ToolResult::error('Invalid scope. Must be one of: '.implode(', ', $validScopes));
             }
 
             // Step 1: Analyze existing getter patterns
@@ -83,9 +83,9 @@ class GenerateGetterTool extends Tool
             );
 
             // Step 3: Check if getter already exists
-            if (!$force && File::exists($getterDetails['file_path'])) {
+            if (! $force && File::exists($getterDetails['file_path'])) {
                 return ToolResult::error(
-                    "Getter already exists at: {$getterDetails['file_path']}\n" .
+                    "Getter already exists at: {$getterDetails['file_path']}\n".
                     "Use 'force: true' to overwrite."
                 );
             }
@@ -106,19 +106,19 @@ class GenerateGetterTool extends Tool
             return $this->generateSuccessResponse($getterDetails, $getterContent);
 
         } catch (\Throwable $e) {
-            return ToolResult::error('Getter generation failed: ' . $e->getMessage());
+            return ToolResult::error('Getter generation failed: '.$e->getMessage());
         }
     }
 
     protected function analyzeGetterPatterns(): array
     {
         $patterns = [
-            'namespace' => $this->getRootNamespace() . '\\Restify\\Getters',
+            'namespace' => $this->getRootNamespace().'\\Restify\\Getters',
             'base_path' => app_path('Restify/Getters'),
         ];
 
         try {
-            $finder = new Finder();
+            $finder = new Finder;
             $finder->files()
                 ->in(app_path())
                 ->name('*Getter.php')
@@ -127,27 +127,27 @@ class GenerateGetterTool extends Tool
 
             $getterPaths = [];
             foreach ($finder as $file) {
-                $relativePath = str_replace(app_path() . DIRECTORY_SEPARATOR, '', $file->getRealPath());
+                $relativePath = str_replace(app_path().DIRECTORY_SEPARATOR, '', $file->getRealPath());
                 $relativePath = str_replace(DIRECTORY_SEPARATOR, '/', $relativePath);
-                
+
                 $pathParts = explode('/', $relativePath);
                 array_pop($pathParts); // Remove filename
-                
-                if (!empty($pathParts)) {
-                    $namespace = $this->getRootNamespace() . '\\' . str_replace('/', '\\', implode('/', $pathParts));
+
+                if (! empty($pathParts)) {
+                    $namespace = $this->getRootNamespace().'\\'.str_replace('/', '\\', implode('/', $pathParts));
                     $basePath = app_path(implode('/', $pathParts));
-                    
+
                     $getterPaths[] = [
                         'namespace' => $namespace,
                         'base_path' => $basePath,
-                        'depth' => count($pathParts)
+                        'depth' => count($pathParts),
                     ];
                 }
             }
 
-            if (!empty($getterPaths)) {
+            if (! empty($getterPaths)) {
                 // Use the most common pattern (or deepest if tie)
-                usort($getterPaths, fn($a, $b) => $b['depth'] <=> $a['depth']);
+                usort($getterPaths, fn ($a, $b) => $b['depth'] <=> $a['depth']);
                 $patterns = $getterPaths[0];
             }
 
@@ -164,13 +164,13 @@ class GenerateGetterTool extends Tool
         array $getterInfo
     ): array {
         // Ensure getter name ends with 'Getter'
-        if (!str_ends_with($getterName, 'Getter')) {
+        if (! str_ends_with($getterName, 'Getter')) {
             $getterName .= 'Getter';
         }
 
         $namespace = $customNamespace ?: $getterInfo['namespace'];
         $basePath = $getterInfo['base_path'];
-        $filePath = $basePath . '/' . $getterName . '.php';
+        $filePath = $basePath.'/'.$getterName.'.php';
 
         return [
             'getter_name' => $getterName,
@@ -236,68 +236,68 @@ class GenerateGetterTool extends Tool
 
     protected function generateInvokeMethod(string $scope, ?string $modelName): string
     {
-        $method = "    public function __invoke(Request \$request";
-        
+        $method = '    public function __invoke(Request $request';
+
         // Add model parameter for show getters
         if ($scope === 'show' && $modelName) {
-            $modelVar = '$' . Str::camel($modelName);
-            $modelParam = Str::studly($modelName) . ' ' . $modelVar;
+            $modelVar = '$'.Str::camel($modelName);
+            $modelParam = Str::studly($modelName).' '.$modelVar;
             $method .= ", {$modelParam}";
         }
-        
+
         $method .= "): JsonResponse\n";
         $method .= "    {\n";
-        
+
         if ($scope === 'show' && $modelName) {
-            $modelVar = '$' . Str::camel($modelName);
+            $modelVar = '$'.Str::camel($modelName);
             $method .= "        // Get additional data for the specific model\n";
             $method .= "        // Example: \$additionalData = {$modelVar}->someRelationship;\n\n";
         } else {
             $method .= "        // Get additional data for the repository\n";
             $method .= "        // Example: \$stats = \$request->user()->getStats();\n\n";
         }
-        
+
         $method .= "        return response()->json([\n";
         $method .= "            'data' => [\n";
         $method .= "                'message' => 'Getter executed successfully',\n";
         $method .= "                // Add your custom data here\n";
         $method .= "            ],\n";
         $method .= "        ]);\n";
-        $method .= "    }";
+        $method .= '    }';
 
         return $method;
     }
 
     protected function generateHandleMethod(string $scope, ?string $modelName): string
     {
-        $method = "    public function handle(Request \$request";
-        
+        $method = '    public function handle(Request $request';
+
         // Add model parameter for show getters
         if ($scope === 'show' && $modelName) {
-            $modelVar = '$' . Str::camel($modelName);
-            $modelParam = Str::studly($modelName) . ' ' . $modelVar;
+            $modelVar = '$'.Str::camel($modelName);
+            $modelParam = Str::studly($modelName).' '.$modelVar;
             $method .= ", {$modelParam}";
         }
-        
+
         $method .= "): JsonResponse\n";
         $method .= "    {\n";
-        
+
         if ($scope === 'show' && $modelName) {
-            $modelVar = '$' . Str::camel($modelName);
+            $modelVar = '$'.Str::camel($modelName);
             $method .= "        // Get additional data for the specific model\n";
             $method .= "        // Example: \$additionalData = {$modelVar}->someRelationship;\n\n";
         } else {
             $method .= "        // Get additional data for the repository\n";
             $method .= "        // Example: \$stats = \$request->user()->getStats();\n\n";
         }
-        
+
         $method .= "        return response()->json([\n";
         $method .= "            'data' => [\n";
         $method .= "                'message' => 'Getter executed successfully',\n";
         $method .= "                // Add your custom data here\n";
         $method .= "            ],\n";
         $method .= "        ]);\n";
-        $method .= "    }";
+        $method .= '    }';
 
         return $method;
     }
@@ -307,8 +307,8 @@ class GenerateGetterTool extends Tool
         $commonLocations = [
             "App\\Models\\{$modelName}",
             "App\\{$modelName}",
-            $this->getRootNamespace() . "\\Models\\{$modelName}",
-            $this->getRootNamespace() . "\\{$modelName}",
+            $this->getRootNamespace()."\\Models\\{$modelName}",
+            $this->getRootNamespace()."\\{$modelName}",
         ];
 
         foreach ($commonLocations as $location) {
@@ -324,7 +324,7 @@ class GenerateGetterTool extends Tool
     {
         // Ensure directory exists
         $directory = dirname($filePath);
-        if (!File::isDirectory($directory)) {
+        if (! File::isDirectory($directory)) {
             File::makeDirectory($directory, 0755, true);
         }
 
@@ -340,7 +340,7 @@ class GenerateGetterTool extends Tool
         // Build imports
         $imports = array_unique($content['imports']);
         sort($imports);
-        $importsString = implode("\n", array_map(fn($import) => "use {$import};", $imports));
+        $importsString = implode("\n", array_map(fn ($import) => "use {$import};", $imports));
 
         // Build class declaration
         $classDeclaration = "class {$content['getter_name']}";
@@ -349,8 +349,8 @@ class GenerateGetterTool extends Tool
         }
 
         // Build properties
-        $propertiesString = empty($content['properties']) ? '' : 
-            implode("\n", $content['properties']) . "\n";
+        $propertiesString = empty($content['properties']) ? '' :
+            implode("\n", $content['properties'])."\n";
 
         // Build methods
         $methodsString = implode("\n\n", $content['methods']);
@@ -408,7 +408,7 @@ namespace {$content['namespace']};
                 $response .= "```\n\n";
                 $response .= "2. Call via API:\n";
                 $response .= "```http\n";
-                $response .= "GET: api/restify/models/getters/" . Str::kebab(str_replace('Getter', '', $getterDetails['getter_name'])) . "\n";
+                $response .= 'GET: api/restify/models/getters/'.Str::kebab(str_replace('Getter', '', $getterDetails['getter_name']))."\n";
                 $response .= "```\n";
                 break;
 
@@ -426,7 +426,7 @@ namespace {$content['namespace']};
                 $response .= "```\n\n";
                 $response .= "2. Call via API:\n";
                 $response .= "```http\n";
-                $response .= "GET: api/restify/models/1/getters/" . Str::kebab(str_replace('Getter', '', $getterDetails['getter_name'])) . "\n";
+                $response .= 'GET: api/restify/models/1/getters/'.Str::kebab(str_replace('Getter', '', $getterDetails['getter_name']))."\n";
                 $response .= "```\n";
                 break;
 
@@ -445,28 +445,28 @@ namespace {$content['namespace']};
                 $response .= "2. Call via API:\n";
                 $response .= "```http\n";
                 $response .= "# Index context (multiple items)\n";
-                $response .= "GET: api/restify/models/getters/" . Str::kebab(str_replace('Getter', '', $getterDetails['getter_name'])) . "\n\n";
+                $response .= 'GET: api/restify/models/getters/'.Str::kebab(str_replace('Getter', '', $getterDetails['getter_name']))."\n\n";
                 $response .= "# Show context (single model)\n";
-                $response .= "GET: api/restify/models/1/getters/" . Str::kebab(str_replace('Getter', '', $getterDetails['getter_name'])) . "\n";
+                $response .= 'GET: api/restify/models/1/getters/'.Str::kebab(str_replace('Getter', '', $getterDetails['getter_name']))."\n";
                 $response .= "```\n";
                 break;
         }
 
         $response .= "\n## Next Steps\n\n";
         $response .= "1. **Review the generated getter** at `{$getterDetails['file_path']}`\n";
-        $response .= "2. **Implement the business logic** in the " . ($content['getter_type'] === 'invokable' ? '__invoke' : 'handle') . " method\n";
+        $response .= '2. **Implement the business logic** in the '.($content['getter_type'] === 'invokable' ? '__invoke' : 'handle')." method\n";
         $response .= "3. **Register the getter** in your repository's `getters()` method\n";
         $response .= "4. **Add authorization** using `->canSee()` if needed\n";
         $response .= "5. **Test the getter** via API calls or feature tests\n\n";
 
         $response .= "## Getter Features Generated\n\n";
-        
-        if (!empty($content['properties'])) {
+
+        if (! empty($content['properties'])) {
             $response .= "✅ **Properties**: Custom URI key and getter settings\n";
         }
 
-        $response .= "✅ **Method**: " . ucfirst($content['getter_type']) . " method with proper signature\n";
-        
+        $response .= '✅ **Method**: '.ucfirst($content['getter_type'])." method with proper signature\n";
+
         if ($content['scope'] !== 'both') {
             $response .= "✅ **Scope**: Configured for {$content['scope']} context\n";
         }

@@ -30,6 +30,7 @@ class InstallCommand extends Command
             $this->error('Laravel Restify package not found!');
             $this->line('Please install Laravel Restify first:');
             $this->line('composer require binaryk/laravel-restify');
+
             return self::FAILURE;
         }
 
@@ -84,7 +85,7 @@ class InstallCommand extends Command
         if (! $installedPackage) {
             $this->warn('⚠️  No MCP package found. The documentation will still be accessible via command line tools.');
             $this->newLine();
-            
+
             if ($this->confirm('Would you like recommendations for MCP packages to install?', true)) {
                 $this->displayMcpPackageRecommendations();
             }
@@ -124,15 +125,15 @@ class InstallCommand extends Command
         $this->newLine();
         $this->info('📦 Recommended MCP Packages:');
         $this->newLine();
-        
+
         $this->line('For most users:');
         $this->line('  composer require laravel/mcp');
         $this->newLine();
-        
+
         $this->line('For advanced users who want more control:');
         $this->line('  composer require php-mcp/laravel');
         $this->newLine();
-        
+
         $this->line('For enterprise/HTTP-based setups:');
         $this->line('  composer require opgginc/laravel-mcp-server');
         $this->newLine();
@@ -143,7 +144,7 @@ class InstallCommand extends Command
         $this->newLine();
         $this->info('🔧 Claude Code MCP Configuration');
         $this->newLine();
-        
+
         if ($this->createMcpConfigFile()) {
             $this->info('✅ Successfully created .mcp.json file!');
             $this->line('The Laravel Restify Documentation server is now available.');
@@ -158,14 +159,14 @@ class InstallCommand extends Command
                 'mcpServers' => [
                     'laravel-restify' => [
                         'command' => 'php',
-                        'args' => ['artisan', 'restify-mcp:start']
-                    ]
-                ]
+                        'args' => ['artisan', 'restify-mcp:start'],
+                    ],
+                ],
             ], JSON_PRETTY_PRINT));
             $this->newLine();
             $this->line('2. Restart Claude Code to load the MCP server');
         }
-        
+
         $this->newLine();
         $this->line('💡 Once configured, you can ask Claude about Laravel Restify:');
         $this->line('   "How do I create a custom field in Laravel Restify?"');
@@ -178,13 +179,13 @@ class InstallCommand extends Command
         $this->newLine();
         $this->info('🔧 Cursor AI Setup Instructions:');
         $this->newLine();
-        
+
         $this->line('1. Open Cursor AI settings');
         $this->line('2. Navigate to Extensions → MCP');
         $this->line('3. Add a new MCP server:');
         $this->line('   - Name: Laravel Restify Docs');
         $this->line('   - Command: php artisan restify-mcp:start');
-        $this->line('   - Working Directory: ' . base_path());
+        $this->line('   - Working Directory: '.base_path());
         $this->newLine();
     }
 
@@ -193,13 +194,13 @@ class InstallCommand extends Command
         $this->newLine();
         $this->info('🔧 General MCP Setup:');
         $this->newLine();
-        
+
         $this->line('For any MCP-compatible AI assistant:');
         $this->line('1. Start the MCP server: php artisan restify-mcp:start');
         $this->line('2. The server will be available on localhost:8080');
         $this->line('3. Configure your AI assistant to connect to this endpoint');
         $this->newLine();
-        
+
         $this->line('Available MCP endpoints:');
         $this->line('• Tools: search-restify-docs, get-code-examples, navigate-docs, generate-repository');
         $this->line('• Resources: restify-documentation, restify-api-reference');
@@ -247,36 +248,35 @@ class InstallCommand extends Command
     {
         try {
             $mcpConfigPath = base_path('.mcp.json');
-            
+
             // Load existing config or create new
             $config = [];
             if (File::exists($mcpConfigPath)) {
                 $existingConfig = File::get($mcpConfigPath);
                 $config = json_decode($existingConfig, true) ?: [];
             }
-            
+
             // Initialize mcpServers section if it doesn't exist
             if (! isset($config['mcpServers'])) {
                 $config['mcpServers'] = [];
             }
-            
+
             // Add our MCP server configuration
             $config['mcpServers']['laravel-restify'] = [
                 'command' => 'php',
-                'args' => ['artisan', 'restify-mcp:start']
+                'args' => ['artisan', 'restify-mcp:start'],
             ];
-            
+
             // Write the updated config
             File::put($mcpConfigPath, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
-            
+
             return true;
         } catch (\Exception $e) {
-            $this->error('Failed to create .mcp.json file: ' . $e->getMessage());
+            $this->error('Failed to create .mcp.json file: '.$e->getMessage());
+
             return false;
         }
     }
-
-
 
     protected function verifyRestifyInstallation(): bool
     {
@@ -289,7 +289,8 @@ class InstallCommand extends Command
         $lockData = json_decode(File::get($composerLock), true);
         foreach (($lockData['packages'] ?? []) as $package) {
             if ($package['name'] === 'binaryk/laravel-restify') {
-                $this->info('Found Laravel Restify version: ' . $package['version']);
+                $this->info('Found Laravel Restify version: '.$package['version']);
+
                 return true;
             }
         }
@@ -305,17 +306,17 @@ class InstallCommand extends Command
         $foundDocs = false;
 
         if ($primaryPath && File::isDirectory($primaryPath)) {
-            $this->info('✅ Primary documentation found: ' . $primaryPath);
+            $this->info('✅ Primary documentation found: '.$primaryPath);
             $foundDocs = true;
         } else {
-            $this->warn('⚠️  Primary documentation not found: ' . $primaryPath);
+            $this->warn('⚠️  Primary documentation not found: '.$primaryPath);
         }
 
         if ($legacyPath && File::isDirectory($legacyPath)) {
-            $this->info('✅ Legacy documentation found: ' . $legacyPath);
+            $this->info('✅ Legacy documentation found: '.$legacyPath);
             $foundDocs = true;
         } else {
-            $this->warn('⚠️  Legacy documentation not found: ' . $legacyPath);
+            $this->warn('⚠️  Legacy documentation not found: '.$legacyPath);
         }
 
         if (! $foundDocs) {

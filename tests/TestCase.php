@@ -2,9 +2,9 @@
 
 namespace BinarCode\LaravelRestifyMcp\Tests;
 
+use BinarCode\LaravelRestifyMcp\LaravelRestifyMcpServiceProvider;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Orchestra\Testbench\TestCase as Orchestra;
-use BinarCode\LaravelRestifyMcp\LaravelRestifyMcpServiceProvider;
 
 class TestCase extends Orchestra
 {

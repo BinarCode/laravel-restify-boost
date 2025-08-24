@@ -33,7 +33,7 @@ abstract class CodeEnvironment
     public function detectOnSystem(string $platform): bool
     {
         $paths = $this->getSystemPaths($platform);
-        
+
         foreach ($paths as $path) {
             if (file_exists($path) || is_dir($path)) {
                 return true;
@@ -46,7 +46,7 @@ abstract class CodeEnvironment
     public function detectInProject(string $basePath): bool
     {
         $files = $this->getProjectFiles();
-        
+
         foreach ($files as $file) {
             if (file_exists($basePath.'/'.$file)) {
                 return true;
@@ -78,8 +78,8 @@ abstract class CodeEnvironment
     /**
      * Install MCP server using file-based configuration strategy.
      *
-     * @param array<int, string> $args
-     * @param array<string, string> $env
+     * @param  array<int, string>  $args
+     * @param  array<string, string>  $env
      *
      * @throws FileNotFoundException
      */

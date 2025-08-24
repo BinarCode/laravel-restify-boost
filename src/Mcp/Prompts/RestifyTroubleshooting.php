@@ -11,9 +11,7 @@ use Laravel\Mcp\Server\Prompts\PromptResult;
 
 class RestifyTroubleshooting extends Prompt
 {
-    public function __construct(protected DocIndexer $indexer)
-    {
-    }
+    public function __construct(protected DocIndexer $indexer) {}
 
     public function name(): string
     {
@@ -43,7 +41,7 @@ class RestifyTroubleshooting extends Prompt
     }
 
     /**
-     * @param array<string, mixed> $arguments
+     * @param  array<string, mixed>  $arguments
      */
     public function handle(array $arguments): PromptResult
     {
@@ -127,7 +125,7 @@ class RestifyTroubleshooting extends Prompt
 
         $guide .= "## Possible Solutions\n\n";
         foreach ($analysisResult['solutions'] as $index => $solution) {
-            $guide .= "### Solution ".($index + 1).": {$solution['title']}\n\n";
+            $guide .= '### Solution '.($index + 1).": {$solution['title']}\n\n";
             $guide .= "{$solution['description']}\n\n";
 
             if (! empty($solution['code'])) {

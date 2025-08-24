@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace BinarCode\LaravelRestifyMcp\Mcp;
 
-use Illuminate\Support\Collection;
 use Symfony\Component\Finder\Finder;
 
 class ToolRegistry
@@ -33,7 +32,7 @@ class ToolRegistry
             self::initialize();
         }
 
-        return in_array($toolClass, self::$allowedTools) && !in_array($toolClass, self::$excludedTools);
+        return in_array($toolClass, self::$allowedTools) && ! in_array($toolClass, self::$excludedTools);
     }
 
     /**
@@ -60,7 +59,7 @@ class ToolRegistry
         $tools = [];
         $toolDir = implode(DIRECTORY_SEPARATOR, [__DIR__, 'Tools']);
 
-        if (!is_dir($toolDir)) {
+        if (! is_dir($toolDir)) {
             return $tools;
         }
 

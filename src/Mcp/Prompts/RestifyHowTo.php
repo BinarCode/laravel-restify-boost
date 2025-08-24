@@ -11,9 +11,7 @@ use Laravel\Mcp\Server\Prompts\PromptResult;
 
 class RestifyHowTo extends Prompt
 {
-    public function __construct(protected DocIndexer $indexer)
-    {
-    }
+    public function __construct(protected DocIndexer $indexer) {}
 
     public function name(): string
     {
@@ -40,7 +38,7 @@ class RestifyHowTo extends Prompt
     }
 
     /**
-     * @param array<string, mixed> $arguments
+     * @param  array<string, mixed>  $arguments
      */
     public function handle(array $arguments): PromptResult
     {
@@ -113,7 +111,7 @@ class RestifyHowTo extends Prompt
             $guide .= "**Your context:** {$context}\n\n";
         }
 
-        $guide .= "**Difficulty level:** ".ucfirst($difficulty)."\n\n";
+        $guide .= '**Difficulty level:** '.ucfirst($difficulty)."\n\n";
 
         if (empty($searchResults)) {
             return $this->generateGenericGuide($task, $difficulty);
@@ -160,7 +158,7 @@ class RestifyHowTo extends Prompt
             // Extract code examples
             if (! empty($result['matched_code_examples'])) {
                 $info['code_examples'] = array_merge(
-                    $info['code_examples'], 
+                    $info['code_examples'],
                     $result['matched_code_examples']
                 );
             }

@@ -12,9 +12,7 @@ use Laravel\Mcp\Server\Tools\ToolResult;
 
 class SearchRestifyDocs extends Tool
 {
-    public function __construct(protected DocIndexer $indexer)
-    {
-    }
+    public function __construct(protected DocIndexer $indexer) {}
 
     public function description(): string
     {
@@ -54,7 +52,7 @@ class SearchRestifyDocs extends Tool
     }
 
     /**
-     * @param array<string, mixed> $arguments
+     * @param  array<string, mixed>  $arguments
      */
     public function handle(array $arguments): ToolResult|Generator
     {
@@ -147,7 +145,7 @@ class SearchRestifyDocs extends Tool
         // Get available categories
         $categories = $this->indexer->getCategories();
         if (! empty($categories)) {
-            $suggestions[] = "**Available categories:** ".implode(', ', array_keys($categories));
+            $suggestions[] = '**Available categories:** '.implode(', ', array_keys($categories));
         }
 
         // Suggest common search terms based on typical questions
@@ -159,13 +157,13 @@ class SearchRestifyDocs extends Tool
             'Authentication' => ['auth', 'policy', 'authorization', 'permission'],
             'Actions' => ['action', 'custom', 'bulk', 'operation'],
         ];
-        
-        $suggestions[] = "**Try these topic-based searches:**";
+
+        $suggestions[] = '**Try these topic-based searches:**';
         foreach ($commonTerms as $topic => $terms) {
-            $suggestions[] = "- {$topic}: " . implode(', ', $terms);
+            $suggestions[] = "- {$topic}: ".implode(', ', $terms);
         }
 
-        $message = "No results found for queries: **".implode('**, **', $queries)."**";
+        $message = 'No results found for queries: **'.implode('**, **', $queries).'**';
         if ($category) {
             $message .= " in category: **{$category}**";
         }
@@ -178,10 +176,10 @@ class SearchRestifyDocs extends Tool
     protected function formatResults(array $allResults, int $tokenLimit, ?string $questionType = null, array $originalQueries = []): string
     {
         $output = "# Laravel Restify Documentation Search Results\n\n";
-        
+
         // Add question-specific introduction
         $output .= $this->generateQuestionSpecificIntro($questionType, $originalQueries);
-        
+
         $currentTokens = 0;
 
         foreach ($allResults as $query => $results) {
@@ -192,12 +190,12 @@ class SearchRestifyDocs extends Tool
             $querySection = "## Query: \"{$query}\"\n\n";
             $resultCount = count($results);
             $querySection .= "Found {$resultCount} result(s)\n\n";
-            
+
             // Add summary for count/list questions
             if ($questionType === 'count' || $questionType === 'list') {
                 $summary = $this->generateSummaryForCountQuestion($results);
                 if ($summary) {
-                    $querySection .= $summary . "\n\n";
+                    $querySection .= $summary."\n\n";
                 }
             }
 
@@ -205,7 +203,7 @@ class SearchRestifyDocs extends Tool
                 $doc = $result['document'];
                 $score = $result['relevance_score'];
 
-                $resultSection = "### ".($index + 1).". {$doc['title']}\n";
+                $resultSection = '### '.($index + 1).". {$doc['title']}\n";
                 $resultSection .= "**Category:** {$doc['category']} | **Relevance:** {$score}\n\n";
 
                 // Add snippet
@@ -259,11 +257,11 @@ class SearchRestifyDocs extends Tool
 
     protected function generateQuestionSpecificIntro(?string $questionType, array $queries): string
     {
-        if (!$questionType) {
-            return "";
+        if (! $questionType) {
+            return '';
         }
 
-        $intro = "";
+        $intro = '';
         $queryText = implode(', ', $queries);
 
         switch ($questionType) {
@@ -271,22 +269,22 @@ class SearchRestifyDocs extends Tool
                 $intro = "## Answering: Types and Counts\n";
                 $intro .= "Based on your question about **how many types** or **what types are available**, here's what I found:\n\n";
                 break;
-            
+
             case 'list':
                 $intro = "## Available Options\n";
                 $intro .= "Here are the **available options** and **types** found in Laravel Restify:\n\n";
                 break;
-            
+
             case 'howto':
                 $intro = "## Implementation Guide\n";
                 $intro .= "Here's **how to implement** what you're looking for:\n\n";
                 break;
-            
+
             case 'concept':
                 $intro = "## Concept Explanation\n";
                 $intro .= "Here's an **explanation of the concept** you asked about:\n\n";
                 break;
-            
+
             case 'example':
                 $intro = "## Code Examples\n";
                 $intro .= "Here are **practical examples** for your use case:\n\n";
@@ -302,7 +300,7 @@ class SearchRestifyDocs extends Tool
         $patterns = [
             // Look for enumerated types
             '/(\d+)\.\s*([A-Za-z][A-Za-z0-9_]*)/m',
-            // Look for bullet points with types  
+            // Look for bullet points with types
             '/[-*]\s*([A-Za-z][A-Za-z0-9_]*)/m',
             // Look for type definitions
             '/([A-Za-z][A-Za-z0-9_]*)\s*:\s*([^.\n]+)/m',
@@ -334,12 +332,12 @@ class SearchRestifyDocs extends Tool
 
         $summary = "**Quick Summary:**\n";
         $types = [];
-        
+
         // Extract common patterns from the results
         foreach ($results as $result) {
             $content = $result['document']['content'] ?? '';
             $title = $result['document']['title'] ?? '';
-            
+
             // Look for filter types pattern
             if (stripos($title, 'filter') !== false || stripos($content, 'filter') !== false) {
                 if (preg_match_all('/- \[([^\]]+)\]/m', $content, $matches)) {
@@ -359,7 +357,7 @@ class SearchRestifyDocs extends Tool
                     }
                 }
             }
-            
+
             // Look for field types
             if (stripos($title, 'field') !== false || stripos($content, 'field') !== false) {
                 // Extract field type definitions
@@ -373,7 +371,7 @@ class SearchRestifyDocs extends Tool
                     }
                 }
             }
-            
+
             // Look for relationship types
             if (stripos($title, 'relation') !== false || stripos($content, 'relation') !== false) {
                 $relationTypes = ['BelongsTo', 'HasOne', 'HasMany', 'BelongsToMany', 'MorphOne', 'MorphMany', 'MorphToMany'];
@@ -384,17 +382,17 @@ class SearchRestifyDocs extends Tool
                 }
             }
         }
-        
-        if (!empty($types)) {
+
+        if (! empty($types)) {
             $uniqueTypes = array_unique($types);
             $count = count($uniqueTypes);
-            $summary .= "Found **{$count}** types: " . implode(', ', array_slice($uniqueTypes, 0, 10));
+            $summary .= "Found **{$count}** types: ".implode(', ', array_slice($uniqueTypes, 0, 10));
             if (count($uniqueTypes) > 10) {
-                $summary .= " (and " . (count($uniqueTypes) - 10) . " more)";
+                $summary .= ' (and '.(count($uniqueTypes) - 10).' more)';
             }
             $summary .= "\n";
         }
-        
+
         return $summary;
     }
 }

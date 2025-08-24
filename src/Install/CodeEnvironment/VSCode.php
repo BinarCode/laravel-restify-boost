@@ -57,7 +57,7 @@ class VSCode extends CodeEnvironment implements McpClient
     {
         $platform = match (PHP_OS_FAMILY) {
             'Darwin' => 'mac',
-            'Linux' => 'linux',  
+            'Linux' => 'linux',
             'Windows' => 'windows',
             default => null,
         };
