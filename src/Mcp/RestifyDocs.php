@@ -28,7 +28,7 @@ class RestifyDocs extends Server
      */
     protected function discoverTools(): array
     {
-        $excludedTools = config('restify-mcp.mcp.tools.exclude', []);
+        $excludedTools = config('restify-boost.mcp.tools.exclude', []);
         $toolsPath = __DIR__.DIRECTORY_SEPARATOR.'Tools';
 
         if (! is_dir($toolsPath)) {
@@ -45,7 +45,7 @@ class RestifyDocs extends Server
             }
         }
 
-        $extraTools = config('restify-mcp.mcp.tools.include', []);
+        $extraTools = config('restify-boost.mcp.tools.include', []);
         foreach ($extraTools as $toolClass) {
             if (class_exists($toolClass)) {
                 $this->addTool($toolClass);
@@ -60,7 +60,7 @@ class RestifyDocs extends Server
      */
     protected function discoverResources(): array
     {
-        $excludedResources = config('restify-mcp.mcp.resources.exclude', []);
+        $excludedResources = config('restify-boost.mcp.resources.exclude', []);
         $resourcesPath = __DIR__.DIRECTORY_SEPARATOR.'Resources';
 
         if (! is_dir($resourcesPath)) {
@@ -77,7 +77,7 @@ class RestifyDocs extends Server
             }
         }
 
-        $extraResources = config('restify-mcp.mcp.resources.include', []);
+        $extraResources = config('restify-boost.mcp.resources.include', []);
         foreach ($extraResources as $resourceClass) {
             if (class_exists($resourceClass)) {
                 $this->addResource($resourceClass);
@@ -92,7 +92,7 @@ class RestifyDocs extends Server
      */
     protected function discoverPrompts(): array
     {
-        $excludedPrompts = config('restify-mcp.mcp.prompts.exclude', []);
+        $excludedPrompts = config('restify-boost.mcp.prompts.exclude', []);
         $promptsPath = __DIR__.DIRECTORY_SEPARATOR.'Prompts';
 
         if (! is_dir($promptsPath)) {
@@ -109,7 +109,7 @@ class RestifyDocs extends Server
             }
         }
 
-        $extraPrompts = config('restify-mcp.mcp.prompts.include', []);
+        $extraPrompts = config('restify-boost.mcp.prompts.include', []);
         foreach ($extraPrompts as $promptClass) {
             if (class_exists($promptClass)) {
                 $this->addPrompt($promptClass);

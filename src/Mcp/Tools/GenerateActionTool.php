@@ -34,7 +34,6 @@ class GenerateActionTool extends Tool
             ->raw('validation_rules', [
                 'description' => 'Validation rules for the action payload as key-value pairs',
                 'type' => 'object',
-                'properties' => [],
                 'additionalProperties' => true,
             ])
             ->optional()
