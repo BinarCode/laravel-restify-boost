@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace BinarCode\LaravelRestifyMcp\Contracts;
+namespace BinarCode\RestifyBoost\Contracts;
 
 interface McpClient
 {

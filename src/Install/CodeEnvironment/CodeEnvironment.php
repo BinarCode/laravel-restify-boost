@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace BinarCode\LaravelRestifyMcp\Install\CodeEnvironment;
+namespace BinarCode\RestifyBoost\Install\CodeEnvironment;
 
 use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Support\Facades\File;

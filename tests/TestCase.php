@@ -1,8 +1,8 @@
 <?php
 
-namespace BinarCode\LaravelRestifyMcp\Tests;
+namespace BinarCode\RestifyBoost\Tests;
 
-use BinarCode\LaravelRestifyMcp\LaravelRestifyMcpServiceProvider;
+use BinarCode\RestifyBoost\RestifyBoostServiceProvider;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Orchestra\Testbench\TestCase as Orchestra;
 
@@ -20,7 +20,7 @@ class TestCase extends Orchestra
     protected function getPackageProviders($app)
     {
         return [
-            LaravelRestifyMcpServiceProvider::class,
+            RestifyBoostServiceProvider::class,
         ];
     }
 

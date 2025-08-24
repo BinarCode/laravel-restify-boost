@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace BinarCode\LaravelRestifyMcp\Mcp\Resources;
+namespace BinarCode\RestifyBoost\Mcp\Resources;
 
-use BinarCode\LaravelRestifyMcp\Services\DocParser;
+use BinarCode\RestifyBoost\Services\DocParser;
 use Laravel\Mcp\Server\Contracts\Resources\Content;
 use Laravel\Mcp\Server\Resource;
 
@@ -39,8 +39,8 @@ class RestifyDocumentation extends Resource
 
     protected function loadDocumentation(): array
     {
-        $primaryPath = config('restify-mcp.docs.paths.primary');
-        $legacyPath = config('restify-mcp.docs.paths.legacy');
+        $primaryPath = config('restify-boost.docs.paths.primary');
+        $fallbackPath = config('restify-boost.docs.paths.fallback');
 
         $documentation = [];
 
@@ -49,9 +49,9 @@ class RestifyDocumentation extends Resource
             $documentation['current'] = $this->loadDocumentationFromPath($primaryPath, 'v2');
         }
 
-        // Load legacy documentation
-        if (is_dir($legacyPath)) {
-            $documentation['legacy'] = $this->loadDocumentationFromPath($legacyPath, 'v1');
+        // Load fallback documentation
+        if (is_dir($fallbackPath)) {
+            $documentation['fallback'] = $this->loadDocumentationFromPath($fallbackPath, 'v2');
         }
 
         return $documentation;
@@ -60,7 +60,7 @@ class RestifyDocumentation extends Resource
     protected function loadDocumentationFromPath(string $basePath, string $version): array
     {
         $sections = [];
-        $categories = config('restify-mcp.categories', []);
+        $categories = config('restify-boost.categories', []);
 
         foreach ($categories as $categoryKey => $categoryConfig) {
             $categoryDocs = [];
@@ -123,13 +123,13 @@ class RestifyDocumentation extends Resource
 
     protected function truncateContent(string $content): string
     {
-        $maxLength = config('restify-mcp.docs.processing.max_content_length', 10000);
+        $maxLength = config('restify-boost.docs.processing.max_content_length', 10000);
 
         if (strlen($content) <= $maxLength) {
             return $content;
         }
 
-        $strategy = config('restify-mcp.optimization.truncate_strategy', 'smart');
+        $strategy = config('restify-boost.optimization.truncate_strategy', 'smart');
 
         return match ($strategy) {
             'smart' => $this->smartTruncate($content, $maxLength),

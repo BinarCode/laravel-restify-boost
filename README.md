@@ -1,19 +1,19 @@
-# Laravel Restify MCP Server
+# Restify Boost
 
-[![Latest Version on Packagist](https://img.shields.io/packagist/v/binarcode/laravel-restify-mcp.svg?style=flat-square)](https://packagist.org/packages/binarcode/laravel-restify-mcp)
-[![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/binarcode/laravel-restify-mcp/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/binarcode/laravel-restify-mcp/actions?query=workflow%3Arun-tests+branch%3Amain)
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/binarcode/restify-boost.svg?style=flat-square)](https://packagist.org/packages/binarcode/restify-boost)
+[![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/binarcode/restify-boost/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/binarcode/restify-boost/actions?query=workflow%3Arun-tests+branch%3Amain)
 
 The first fully customizable Laravel [JSON:API](https://jsonapi.org) builder with MCP and GraphQL support. "CRUD" and protect your resources with 0 (zero) extra line of code.
 
 <div>
 <a href="https://restifytemplates.com">
-<img alt="Save weeks of API development" src="/docs-v2/static/starter-kit.png">
+<img alt="Save weeks of API development" src="/docs/starter-kit.png">
 </a>
 </div>
 
 ## Introduction
 
-Laravel Restify MCP Server accelerates AI-assisted [Laravel Restify](https://github.com/binarcode/laravel-restify) development by providing comprehensive documentation access through the Model Context Protocol.
+Restify Boost accelerates AI-assisted [Laravel Restify](https://github.com/binarcode/laravel-restify) development by providing comprehensive documentation access and code generation tools through the Model Context Protocol.
 
 At its foundation, this package is an MCP server equipped with specialized tools designed to streamline Laravel Restify development workflows. The server provides access to complete documentation, API references, code examples, and troubleshooting guides.
 
@@ -25,16 +25,16 @@ At its foundation, this package is an MCP server equipped with specialized tools
 
 ## Installation
 
-Laravel Restify MCP Server can be installed via Composer:
+Restify Boost can be installed via Composer:
 
 ```bash
-composer require binarcode/laravel-restify-mcp --dev
+composer require binarcode/restify-boost --dev
 ```
 
 Next, install the MCP server:
 
 ```bash
-php artisan restify-mcp:install
+php artisan restify-boost:install
 ```
 
 Once installed, you're ready to start coding with Cursor, Claude Code, or your AI agent of choice.
@@ -59,11 +59,11 @@ Once installed, you're ready to start coding with Cursor, Claude Code, or your A
 
 ## Manually Registering the MCP Server
 
-Sometimes you may need to manually register the Laravel Restify MCP server with your editor of choice. You should register the MCP server using the following details:
+Sometimes you may need to manually register the Restify Boost MCP server with your editor of choice. You should register the MCP server using the following details:
 
 <table>
 <tr><td><strong>Command</strong></td><td><code>php</code></td></tr>
-<tr><td><strong>Args</strong></td><td><code>./artisan restify-mcp:start</code></td></tr>
+<tr><td><strong>Args</strong></td><td><code>./artisan restify-boost:start</code></td></tr>
 </table>
 
 JSON Example:
@@ -71,9 +71,9 @@ JSON Example:
 ```json
 {
     "mcpServers": {
-        "laravel-restify-mcp": {
+        "restify-boost": {
             "command": "php",
-            "args": ["./artisan", "restify-mcp:start"]
+            "args": ["./artisan", "restify-boost:start"]
         }
     }
 }
@@ -81,7 +81,7 @@ JSON Example:
 
 ## Contributing
 
-Thank you for considering contributing to Laravel Restify MCP Server! Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
+Thank you for considering contributing to Restify Boost! Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
 
 ## Security Vulnerabilities
 
@@ -94,4 +94,4 @@ Please review [our security policy](../../security/policy) on how to report secu
 
 ## License
 
-Laravel Restify MCP Server is open-sourced software licensed under the [MIT license](LICENSE.md).
+Restify Boost is open-sourced software licensed under the [MIT license](LICENSE.md).

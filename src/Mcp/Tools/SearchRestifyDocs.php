@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace BinarCode\LaravelRestifyMcp\Mcp\Tools;
+namespace BinarCode\RestifyBoost\Mcp\Tools;
 
-use BinarCode\LaravelRestifyMcp\Services\DocIndexer;
+use BinarCode\RestifyBoost\Services\DocIndexer;
 use Generator;
 use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\ToolInputSchema;
@@ -59,7 +59,7 @@ class SearchRestifyDocs extends Tool
         try {
             $queries = array_filter(
                 array_map('trim', $arguments['queries']),
-                fn ($query) => $query !== '' && strlen($query) >= config('restify-mcp.search.min_query_length', 2)
+                fn ($query) => $query !== '' && strlen($query) >= config('restify-boost.search.min_query_length', 2)
             );
 
             if (empty($queries)) {
@@ -69,12 +69,12 @@ class SearchRestifyDocs extends Tool
             $questionType = $arguments['question_type'] ?? null;
             $category = $arguments['category'] ?? null;
             $limit = min(
-                $arguments['limit'] ?? config('restify-mcp.search.default_limit', 10),
-                config('restify-mcp.search.max_limit', 50)
+                $arguments['limit'] ?? config('restify-boost.search.default_limit', 10),
+                config('restify-boost.search.max_limit', 50)
             );
             $tokenLimit = min(
-                $arguments['token_limit'] ?? config('restify-mcp.optimization.default_token_limit', 10000),
-                config('restify-mcp.optimization.max_token_limit', 100000)
+                $arguments['token_limit'] ?? config('restify-boost.optimization.default_token_limit', 10000),
+                config('restify-boost.optimization.max_token_limit', 100000)
             );
 
             // Initialize indexer with documentation
@@ -109,11 +109,11 @@ class SearchRestifyDocs extends Tool
     protected function getDocumentationPaths(): array
     {
         $paths = [];
-        $docsPath = config('restify-mcp.docs.paths.primary');
-        $legacyPath = config('restify-mcp.docs.paths.legacy');
+        $primaryPath = config('restify-boost.docs.paths.primary');
+        $fallbackPath = config('restify-boost.docs.paths.fallback');
 
         // Scan for markdown files in documentation directories
-        foreach ([$docsPath, $legacyPath] as $basePath) {
+        foreach ([$primaryPath, $fallbackPath] as $basePath) {
             if (is_dir($basePath)) {
                 $paths = array_merge($paths, $this->scanDirectoryForMarkdown($basePath));
             }
@@ -221,7 +221,7 @@ class SearchRestifyDocs extends Tool
                 }
 
                 // Add code examples if prioritized and available
-                if (config('restify-mcp.optimization.prioritize_code_examples') && ! empty($result['matched_code_examples'])) {
+                if (config('restify-boost.optimization.prioritize_code_examples') && ! empty($result['matched_code_examples'])) {
                     $resultSection .= "**Code examples:**\n";
                     foreach (array_slice($result['matched_code_examples'], 0, 2) as $example) {
                         $resultSection .= "```{$example['language']}\n{$example['code']}\n```\n\n";

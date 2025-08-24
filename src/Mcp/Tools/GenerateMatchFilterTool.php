@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace BinarCode\LaravelRestifyMcp\Mcp\Tools;
+namespace BinarCode\RestifyBoost\Mcp\Tools;
 
 use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\ToolResult;

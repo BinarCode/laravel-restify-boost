@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace BinarCode\LaravelRestifyMcp\Commands;
+namespace BinarCode\RestifyBoost\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 
 class InstallCommand extends Command
 {
-    protected $signature = 'restify-mcp:install';
+    protected $signature = 'restify-boost:install';
 
-    protected $description = 'Install and configure the Laravel Restify MCP package';
+    protected $description = 'Install and configure the Restify Boost package';
 
     public function handle(): int
     {
@@ -20,7 +20,7 @@ class InstallCommand extends Command
         // Publish configuration file
         $this->line('Publishing configuration file...');
         $this->call('vendor:publish', [
-            '--tag' => 'restify-mcp-config',
+            '--tag' => 'restify-boost-config',
             '--force' => true,
         ]);
 
@@ -53,10 +53,10 @@ class InstallCommand extends Command
     {
         $this->newLine();
         $this->info('┌─────────────────────────────────────────┐');
-        $this->info('│     Laravel Restify MCP Setup          │');
+        $this->info('│       Restify Boost Setup              │');
         $this->info('└─────────────────────────────────────────┘');
         $this->newLine();
-        $this->line('This will set up the MCP server to provide Laravel Restify');
+        $this->line('This will set up Restify Boost to provide Laravel Restify');
         $this->line('documentation access to AI assistants like Claude Code.');
         $this->newLine();
     }
@@ -159,7 +159,7 @@ class InstallCommand extends Command
                 'mcpServers' => [
                     'laravel-restify' => [
                         'command' => 'php',
-                        'args' => ['artisan', 'restify-mcp:start'],
+                        'args' => ['artisan', 'restify-boost:start'],
                     ],
                 ],
             ], JSON_PRETTY_PRINT));
@@ -184,7 +184,7 @@ class InstallCommand extends Command
         $this->line('2. Navigate to Extensions → MCP');
         $this->line('3. Add a new MCP server:');
         $this->line('   - Name: Laravel Restify Docs');
-        $this->line('   - Command: php artisan restify-mcp:start');
+        $this->line('   - Command: php artisan restify-boost:start');
         $this->line('   - Working Directory: '.base_path());
         $this->newLine();
     }
@@ -196,7 +196,7 @@ class InstallCommand extends Command
         $this->newLine();
 
         $this->line('For any MCP-compatible AI assistant:');
-        $this->line('1. Start the MCP server: php artisan restify-mcp:start');
+        $this->line('1. Start the MCP server: php artisan restify-boost:start');
         $this->line('2. The server will be available on localhost:8080');
         $this->line('3. Configure your AI assistant to connect to this endpoint');
         $this->newLine();
@@ -211,19 +211,19 @@ class InstallCommand extends Command
     protected function displayCompletion(): void
     {
         $this->newLine();
-        $this->info('✅ Laravel Restify MCP package installed successfully!');
+        $this->info('✅ Restify Boost package installed successfully!');
         $this->newLine();
 
         $this->info('🚀 Quick Start:');
-        $this->line('1. Test the installation: php artisan restify-mcp:execute search-restify-docs --queries="repository"');
-        $this->line('2. Generate a repository: php artisan restify-mcp:execute generate-repository --model-name="User"');
-        $this->line('3. Browse documentation: php artisan restify-mcp:execute navigate-docs --action="overview"');
-        $this->line('4. Start MCP server: php artisan restify-mcp:start');
+        $this->line('1. Test the installation: php artisan restify-boost:execute search-restify-docs --queries="repository"');
+        $this->line('2. Generate a repository: php artisan restify-boost:execute generate-repository --model-name="User"');
+        $this->line('3. Browse documentation: php artisan restify-boost:execute navigate-docs --action="overview"');
+        $this->line('4. Start MCP server: php artisan restify-boost:start');
         $this->line('5. Configure your AI assistant to use the MCP server');
         $this->newLine();
 
-        $this->line('Configuration file: config/restify-mcp.php');
-        $this->line('Documentation: https://github.com/binarcode/laravel-restify-mcp');
+        $this->line('Configuration file: config/restify-boost.php');
+        $this->line('Documentation: https://github.com/binarcode/restify-boost');
         $this->newLine();
     }
 
@@ -264,7 +264,7 @@ class InstallCommand extends Command
             // Add our MCP server configuration
             $config['mcpServers']['laravel-restify'] = [
                 'command' => 'php',
-                'args' => ['artisan', 'restify-mcp:start'],
+                'args' => ['artisan', 'restify-boost:start'],
             ];
 
             // Write the updated config
@@ -300,8 +300,8 @@ class InstallCommand extends Command
 
     protected function checkDocumentationPaths(): void
     {
-        $primaryPath = config('restify-mcp.docs.paths.primary');
-        $legacyPath = config('restify-mcp.docs.paths.legacy');
+        $primaryPath = config('restify-boost.docs.paths.primary');
+        $legacyPath = config('restify-boost.docs.paths.legacy');
 
         $foundDocs = false;
 

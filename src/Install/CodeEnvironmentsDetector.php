@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace BinarCode\LaravelRestifyMcp\Install;
+namespace BinarCode\RestifyBoost\Install;
 
-use BinarCode\LaravelRestifyMcp\Install\CodeEnvironment\ClaudeDesktop;
-use BinarCode\LaravelRestifyMcp\Install\CodeEnvironment\CodeEnvironment;
-use BinarCode\LaravelRestifyMcp\Install\CodeEnvironment\Cursor;
-use BinarCode\LaravelRestifyMcp\Install\CodeEnvironment\VSCode;
+use BinarCode\RestifyBoost\Install\CodeEnvironment\ClaudeDesktop;
+use BinarCode\RestifyBoost\Install\CodeEnvironment\CodeEnvironment;
+use BinarCode\RestifyBoost\Install\CodeEnvironment\Cursor;
+use BinarCode\RestifyBoost\Install\CodeEnvironment\VSCode;
 use Illuminate\Container\Container;
 use Illuminate\Support\Collection;
 

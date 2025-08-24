@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace BinarCode\LaravelRestifyMcp\Mcp\Resources;
+namespace BinarCode\RestifyBoost\Mcp\Resources;
 
-use BinarCode\LaravelRestifyMcp\Services\DocParser;
+use BinarCode\RestifyBoost\Services\DocParser;
 use Laravel\Mcp\Server\Contracts\Resources\Content;
 use Laravel\Mcp\Server\Resource;
 
