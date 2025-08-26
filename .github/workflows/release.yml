@@ -32,39 +32,46 @@ jobs:
           composer update --prefer-stable --prefer-dist --no-interaction
           vendor/bin/pest --ci
 
-      - name: Get version from composer.json
+      - name: Get next version
         id: get_version
         run: |
-          VERSION=$(php -r "echo json_decode(file_get_contents('composer.json'), true)['version'] ?? 'v1.0.0';")
-          if [[ ! $VERSION =~ ^v[0-9]+\.[0-9]+\.[0-9]+.*$ ]]; then
-            # If no version in composer.json, use timestamp-based version
-            VERSION="v1.0.$(date +%Y%m%d%H%M%S)"
-          fi
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "tag_name=$VERSION" >> $GITHUB_OUTPUT
-
-      - name: Check if tag exists
-        id: check_tag
-        run: |
-          if git rev-parse --verify "refs/tags/${{ steps.get_version.outputs.tag_name }}" >/dev/null 2>&1; then
-            echo "exists=true" >> $GITHUB_OUTPUT
-          else
-            echo "exists=false" >> $GITHUB_OUTPUT
-          fi
+          # Get the latest tag
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "Latest tag: $LATEST_TAG"
+          
+          # Extract version numbers (remove 'v' prefix)
+          VERSION_NUM=${LATEST_TAG#v}
+          
+          # Split version into parts
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION_NUM"
+          
+          # Default to 0 if parts are empty
+          MAJOR=${MAJOR:-0}
+          MINOR=${MINOR:-0}
+          PATCH=${PATCH:-0}
+          
+          # Increment patch version for every merge
+          PATCH=$((PATCH + 1))
+          
+          # Create new version
+          NEW_VERSION="v$MAJOR.$MINOR.$PATCH"
+          
+          echo "New version: $NEW_VERSION"
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "tag_name=$NEW_VERSION" >> $GITHUB_OUTPUT
 
       - name: Generate changelog
         id: changelog
-        if: steps.check_tag.outputs.exists == 'false'
         run: |
-          # Get the latest tag
-          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          # Get the previous tag for changelog
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
           
-          if [ -z "$LATEST_TAG" ]; then
+          if [ -z "$PREVIOUS_TAG" ]; then
             # If no previous tags, get all commits
             COMMITS=$(git log --pretty=format:"* %s (%an)" --no-merges)
           else
             # Get commits since last tag
-            COMMITS=$(git log ${LATEST_TAG}..HEAD --pretty=format:"* %s (%an)" --no-merges)
+            COMMITS=$(git log ${PREVIOUS_TAG}..HEAD --pretty=format:"* %s (%an)" --no-merges)
           fi
           
           # Create changelog
@@ -76,18 +83,12 @@ jobs:
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Create Release
-        if: steps.check_tag.outputs.exists == 'false'
-        uses: actions/create-release@v1
+        uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ steps.get_version.outputs.tag_name }}
-          release_name: Release ${{ steps.get_version.outputs.tag_name }}
+          name: Release ${{ steps.get_version.outputs.tag_name }}
           body: ${{ steps.changelog.outputs.changelog }}
           draft: false
           prerelease: false
-
-      - name: Skip release (tag exists)
-        if: steps.check_tag.outputs.exists == 'true'
-        run: |
-          echo "Tag ${{ steps.get_version.outputs.tag_name }} already exists. Skipping release creation."

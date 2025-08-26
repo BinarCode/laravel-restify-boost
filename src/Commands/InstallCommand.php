@@ -6,15 +6,21 @@ namespace BinarCode\RestifyBoost\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
+use Laravel\Prompts\Concerns\Colors;
+
+use function Laravel\Prompts\intro;
+use function Laravel\Prompts\note;
 
 class InstallCommand extends Command
 {
+    use Colors;
     protected $signature = 'restify-boost:install';
 
     protected $description = 'Install and configure the Restify Boost package';
 
     public function handle(): int
     {
+        $this->displayRestifyHeader();
         $this->displayWelcome();
 
         // Publish configuration file
@@ -23,16 +29,6 @@ class InstallCommand extends Command
             '--tag' => 'restify-boost-config',
             '--force' => true,
         ]);
-
-        // Verify Laravel Restify is installed
-        $this->line('Checking Laravel Restify installation...');
-        if (! $this->verifyRestifyInstallation()) {
-            $this->error('Laravel Restify package not found!');
-            $this->line('Please install Laravel Restify first:');
-            $this->line('composer require binaryk/laravel-restify');
-
-            return self::FAILURE;
-        }
 
         // Check documentation availability
         $this->line('Checking documentation availability...');
@@ -49,12 +45,29 @@ class InstallCommand extends Command
         return self::SUCCESS;
     }
 
+    private function displayRestifyHeader(): void
+    {
+        note($this->restifyLogo());
+        intro('✦ Laravel Restify MCP :: Install :: We Must REST ✦');
+    }
+
+    private function restifyLogo(): string
+    {
+        return
+         <<<'HEADER'
+        ██████╗  ███████╗ ███████╗ ████████╗ ██╗ ███████╗ ██╗   ██╗
+        ██╔══██╗ ██╔════╝ ██╔════╝ ╚══██╔══╝ ██║ ██╔════╝ ╚██╗ ██╔╝
+        ██████╔╝ █████╗   ███████╗    ██║    ██║ █████╗    ╚████╔╝ 
+        ██╔══██╗ ██╔══╝   ╚════██║    ██║    ██║ ██╔══╝     ╚██╔╝  
+        ██║  ██║ ███████╗ ███████║    ██║    ██║ ██║         ██║   
+        ╚═╝  ╚═╝ ╚══════╝ ╚══════╝    ╚═╝    ╚═╝ ╚═╝         ╚═╝   
+        HEADER;
+    }
+
     protected function displayWelcome(): void
     {
-        $this->newLine();
-        $this->info('┌─────────────────────────────────────────┐');
-        $this->info('│       Restify Boost Setup              │');
-        $this->info('└─────────────────────────────────────────┘');
+        $appName = config('app.name', 'Your Laravel App');
+        note("Let's give {$this->bgBlue($this->white($this->bold($appName)))} a RESTful boost with Restify MCP!");
         $this->newLine();
         $this->line('This will set up Restify Boost to provide Laravel Restify');
         $this->line('documentation access to AI assistants like Claude Code.');
@@ -276,26 +289,6 @@ class InstallCommand extends Command
 
             return false;
         }
-    }
-
-    protected function verifyRestifyInstallation(): bool
-    {
-        // Check if Laravel Restify is in composer.lock
-        $composerLock = base_path('composer.lock');
-        if (! File::exists($composerLock)) {
-            return false;
-        }
-
-        $lockData = json_decode(File::get($composerLock), true);
-        foreach (($lockData['packages'] ?? []) as $package) {
-            if ($package['name'] === 'binaryk/laravel-restify') {
-                $this->info('Found Laravel Restify version: '.$package['version']);
-
-                return true;
-            }
-        }
-
-        return false;
     }
 
     protected function checkDocumentationPaths(): void
