@@ -14,6 +14,7 @@ use function Laravel\Prompts\note;
 class InstallCommand extends Command
 {
     use Colors;
+
     protected $signature = 'restify-boost:install';
 
     protected $description = 'Install and configure the Restify Boost package';
