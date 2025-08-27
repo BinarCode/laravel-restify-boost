@@ -6,7 +6,6 @@ namespace BinarCode\RestifyBoost\Mcp\Tools;
 
 use Generator;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Str;
 use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\ToolInputSchema;
 use Laravel\Mcp\Server\Tools\ToolResult;
@@ -66,7 +65,7 @@ class UpgradeRestifyTool extends Tool
             $report['summary']['repositories_found'] = count($repositories);
 
             if (empty($repositories)) {
-                return ToolResult::text("No Restify repositories found. Ensure you have repositories in app/Restify or specify a custom path.");
+                return ToolResult::text('No Restify repositories found. Ensure you have repositories in app/Restify or specify a custom path.');
             }
 
             // Step 2: Analyze each repository
@@ -75,7 +74,7 @@ class UpgradeRestifyTool extends Tool
                 $report['repositories'][$repoPath] = $analysis;
 
                 // Step 3: Apply migrations if not dry run
-                if (!$dryRun) {
+                if (! $dryRun) {
                     $changes = $this->applyMigrations(
                         $repoPath,
                         $analysis,
@@ -84,8 +83,8 @@ class UpgradeRestifyTool extends Tool
                         $backupFiles
                     );
                     $report['changes_applied'][$repoPath] = $changes;
-                    
-                    if ($backupFiles && !empty($changes)) {
+
+                    if ($backupFiles && ! empty($changes)) {
                         $backup = $this->createBackup($repoPath);
                         if ($backup) {
                             $report['backups_created'][] = $backup;
@@ -107,7 +106,7 @@ class UpgradeRestifyTool extends Tool
             return $this->generateUpgradeReport($report, $dryRun);
 
         } catch (\Throwable $e) {
-            return ToolResult::error('Restify upgrade failed: ' . $e->getMessage());
+            return ToolResult::error('Restify upgrade failed: '.$e->getMessage());
         }
     }
 
@@ -121,12 +120,12 @@ class UpgradeRestifyTool extends Tool
         ];
 
         foreach ($searchPaths as $searchPath) {
-            if (!File::isDirectory($searchPath)) {
+            if (! File::isDirectory($searchPath)) {
                 continue;
             }
 
             try {
-                $finder = new Finder();
+                $finder = new Finder;
                 $finder->files()
                     ->in($searchPath)
                     ->name('*Repository.php')
@@ -136,11 +135,11 @@ class UpgradeRestifyTool extends Tool
                 foreach ($finder as $file) {
                     $filePath = $file->getRealPath();
                     $content = File::get($filePath);
-                    
+
                     // Basic check if it's a Restify repository
-                    if (str_contains($content, 'extends Repository') || 
+                    if (str_contains($content, 'extends Repository') ||
                         str_contains($content, 'use Repository')) {
-                        
+
                         $repositories[$filePath] = [
                             'name' => $file->getFilenameWithoutExtension(),
                             'size' => $file->getSize(),
@@ -239,7 +238,7 @@ class UpgradeRestifyTool extends Tool
     protected function migrateToAttributes(string $content, string $modelClass): string
     {
         // Add use statement if not present
-        if (!str_contains($content, 'use Binaryk\LaravelRestify\Attributes\Model;')) {
+        if (! str_contains($content, 'use Binaryk\LaravelRestify\Attributes\Model;')) {
             $content = preg_replace(
                 '/(namespace\s+[^;]+;)/s',
                 "$1\n\nuse Binaryk\\LaravelRestify\\Attributes\\Model;",
@@ -271,7 +270,7 @@ class UpgradeRestifyTool extends Tool
         $content = preg_replace('/public\s+static\s+array\s+\$sort\s*=\s*\[.*?\];\s*/s', '', $content);
 
         // Update field definitions
-        if (!empty($analysis['field_definitions'])) {
+        if (! empty($analysis['field_definitions'])) {
             $content = $this->updateFieldDefinitions(
                 $content,
                 $analysis['static_search_fields'],
@@ -298,21 +297,21 @@ class UpgradeRestifyTool extends Tool
                     function ($fieldMatches) use ($searchFields, $sortFields) {
                         $fieldName = $fieldMatches[1];
                         $chain = $fieldMatches[0];
-                        
+
                         if (in_array($fieldName, $searchFields)) {
                             $chain .= '->searchable()';
                         }
-                        
+
                         if (in_array($fieldName, $sortFields)) {
                             $chain .= '->sortable()';
                         }
-                        
+
                         return $chain;
                     },
                     $methodBody
                 );
 
-                return $methodStart . $methodBody . $methodEnd;
+                return $methodStart.$methodBody.$methodEnd;
             },
             $content
         );
@@ -322,40 +321,40 @@ class UpgradeRestifyTool extends Tool
     {
         $fields = [];
         $content = trim($content);
-        
+
         if (preg_match_all('/[\'"]([^\'"]+)[\'"]/', $content, $matches)) {
             $fields = $matches[1];
         }
-        
+
         return $fields;
     }
 
     protected function extractFieldDefinitions(string $content): array
     {
         $fields = [];
-        
+
         if (preg_match_all('/field\([\'"]([^\'"]+)[\'"]\)/', $content, $matches)) {
             $fields = $matches[1];
         }
-        
+
         return $fields;
     }
 
     protected function checkForUpgradeIssues(string $content, array &$analysis): void
     {
         // Check for potential compatibility issues
-        
+
         // Old imports that might need updating
         if (str_contains($content, 'use Binaryk\LaravelRestify\Fields\Field;')) {
             $analysis['issues'][] = 'Consider updating field imports to use field() helper';
         }
-        
+
         // Check for deprecated methods
         $deprecatedPatterns = [
             'resolveUsing' => 'Consider using modern field methods',
             'displayUsing' => 'Consider using modern field methods',
         ];
-        
+
         foreach ($deprecatedPatterns as $pattern => $suggestion) {
             if (str_contains($content, $pattern)) {
                 $analysis['issues'][] = $suggestion;
@@ -367,55 +366,56 @@ class UpgradeRestifyTool extends Tool
     {
         $issues = [];
         $configPath = config_path('restify.php');
-        
-        if (!File::exists($configPath)) {
+
+        if (! File::exists($configPath)) {
             $issues[] = [
                 'type' => 'missing_config',
                 'message' => 'Config file config/restify.php not found',
-                'recommendation' => 'Run: php artisan vendor:publish --provider="Binaryk\\LaravelRestify\\LaravelRestifyServiceProvider" --tag="config"'
+                'recommendation' => 'Run: php artisan vendor:publish --provider="Binaryk\\LaravelRestify\\LaravelRestifyServiceProvider" --tag="config"',
             ];
+
             return $issues;
         }
 
         $config = File::get($configPath);
-        
+
         // Check for new v10 config sections
         $requiredSections = [
             'mcp' => 'MCP server configuration for AI tools',
             'ai_solutions' => 'AI-powered solutions configuration',
         ];
-        
+
         foreach ($requiredSections as $section => $description) {
-            if (!str_contains($config, "'$section'")) {
+            if (! str_contains($config, "'$section'")) {
                 $issues[] = [
                     'type' => 'missing_section',
                     'section' => $section,
                     'message' => "Missing '$section' configuration section",
-                    'recommendation' => "Add $description to config file"
+                    'recommendation' => "Add $description to config file",
                 ];
             }
         }
-        
+
         return $issues;
     }
 
     protected function generateRecommendations(array $report): array
     {
         $recommendations = [];
-        
+
         // General upgrade recommendations
         $recommendations[] = [
             'type' => 'general',
             'title' => 'Upgrade Laravel Restify Package',
             'description' => 'Update your composer.json to require Laravel Restify ^10.0',
-            'command' => 'composer require binaryk/laravel-restify:^10.0'
+            'command' => 'composer require binaryk/laravel-restify:^10.0',
         ];
-        
+
         // Repository-specific recommendations
         $totalRepos = count($report['repositories']);
-        $needsAttributeMigration = array_filter($report['repositories'], fn($r) => $r['needs_attribute_migration']);
-        $needsFieldMigration = array_filter($report['repositories'], fn($r) => $r['needs_field_migration']);
-        
+        $needsAttributeMigration = array_filter($report['repositories'], fn ($r) => $r['needs_attribute_migration']);
+        $needsFieldMigration = array_filter($report['repositories'], fn ($r) => $r['needs_field_migration']);
+
         if (count($needsAttributeMigration) > 0) {
             $recommendations[] = [
                 'type' => 'migration',
@@ -425,10 +425,10 @@ class UpgradeRestifyTool extends Tool
                     count($needsAttributeMigration),
                     $totalRepos
                 ),
-                'priority' => 'recommended'
+                'priority' => 'recommended',
             ];
         }
-        
+
         if (count($needsFieldMigration) > 0) {
             $recommendations[] = [
                 'type' => 'migration',
@@ -438,29 +438,30 @@ class UpgradeRestifyTool extends Tool
                     count($needsFieldMigration),
                     $totalRepos
                 ),
-                'priority' => 'recommended'
+                'priority' => 'recommended',
             ];
         }
-        
+
         // Config recommendations
-        if (!empty($report['config_issues'])) {
+        if (! empty($report['config_issues'])) {
             $recommendations[] = [
                 'type' => 'config',
                 'title' => 'Configuration Updates',
                 'description' => 'Update config file to include new v10 features',
-                'priority' => 'important'
+                'priority' => 'important',
             ];
         }
-        
+
         return $recommendations;
     }
 
     protected function createBackup(string $filePath): ?string
     {
-        $backupPath = $filePath . '.bak-' . date('Y-m-d-H-i-s');
-        
+        $backupPath = $filePath.'.bak-'.date('Y-m-d-H-i-s');
+
         try {
             File::copy($filePath, $backupPath);
+
             return $backupPath;
         } catch (\Exception $e) {
             return null;
@@ -470,7 +471,7 @@ class UpgradeRestifyTool extends Tool
     protected function generateUpgradeReport(array $report, bool $dryRun): ToolResult
     {
         $response = "# Laravel Restify 9.x → 10.x Upgrade Report\n\n";
-        
+
         // Status indicator
         if ($dryRun) {
             $response .= "🔍 **DRY RUN MODE** - No changes were applied\n\n";
@@ -481,18 +482,18 @@ class UpgradeRestifyTool extends Tool
         // Summary
         $response .= "## Summary\n\n";
         $response .= "- **Repositories Found**: {$report['summary']['repositories_found']}\n";
-        
-        $needsAttributeMigration = array_filter($report['repositories'], fn($r) => $r['needs_attribute_migration']);
-        $needsFieldMigration = array_filter($report['repositories'], fn($r) => $r['needs_field_migration']);
-        
-        $response .= "- **Need Attribute Migration**: " . count($needsAttributeMigration) . "\n";
-        $response .= "- **Need Field Migration**: " . count($needsFieldMigration) . "\n";
-        $response .= "- **Config Issues**: " . count($report['config_issues']) . "\n\n";
+
+        $needsAttributeMigration = array_filter($report['repositories'], fn ($r) => $r['needs_attribute_migration']);
+        $needsFieldMigration = array_filter($report['repositories'], fn ($r) => $r['needs_field_migration']);
+
+        $response .= '- **Need Attribute Migration**: '.count($needsAttributeMigration)."\n";
+        $response .= '- **Need Field Migration**: '.count($needsFieldMigration)."\n";
+        $response .= '- **Config Issues**: '.count($report['config_issues'])."\n\n";
 
         // Repository Analysis
-        if (!empty($report['repositories'])) {
+        if (! empty($report['repositories'])) {
             $response .= "## Repository Analysis\n\n";
-            
+
             foreach ($report['repositories'] as $repoPath => $analysis) {
                 $repoName = basename($repoPath, '.php');
                 $response .= "### $repoName\n\n";
@@ -507,16 +508,16 @@ class UpgradeRestifyTool extends Tool
 
                 if ($analysis['needs_field_migration']) {
                     $response .= "🔄 **Needs Field Migration**\n";
-                    if (!empty($analysis['static_search_fields'])) {
-                        $response .= "- Search fields: " . implode(', ', $analysis['static_search_fields']) . "\n";
+                    if (! empty($analysis['static_search_fields'])) {
+                        $response .= '- Search fields: '.implode(', ', $analysis['static_search_fields'])."\n";
                     }
-                    if (!empty($analysis['static_sort_fields'])) {
-                        $response .= "- Sort fields: " . implode(', ', $analysis['static_sort_fields']) . "\n";
+                    if (! empty($analysis['static_sort_fields'])) {
+                        $response .= '- Sort fields: '.implode(', ', $analysis['static_sort_fields'])."\n";
                     }
                     $response .= "\n";
                 }
 
-                if (!empty($analysis['issues'])) {
+                if (! empty($analysis['issues'])) {
                     $response .= "⚠️ **Issues Found**:\n";
                     foreach ($analysis['issues'] as $issue) {
                         $response .= "- $issue\n";
@@ -524,7 +525,7 @@ class UpgradeRestifyTool extends Tool
                     $response .= "\n";
                 }
 
-                if (!$dryRun && isset($report['changes_applied'][$repoPath])) {
+                if (! $dryRun && isset($report['changes_applied'][$repoPath])) {
                     $response .= "✅ **Changes Applied**:\n";
                     foreach ($report['changes_applied'][$repoPath] as $change) {
                         $response .= "- $change\n";
@@ -537,9 +538,9 @@ class UpgradeRestifyTool extends Tool
         }
 
         // Config Issues
-        if (!empty($report['config_issues'])) {
+        if (! empty($report['config_issues'])) {
             $response .= "## Configuration Issues\n\n";
-            
+
             foreach ($report['config_issues'] as $issue) {
                 $response .= "❌ **{$issue['message']}**\n";
                 $response .= "- Recommendation: {$issue['recommendation']}\n\n";
@@ -547,14 +548,14 @@ class UpgradeRestifyTool extends Tool
         }
 
         // Recommendations
-        if (!empty($report['recommendations'])) {
+        if (! empty($report['recommendations'])) {
             $response .= "## Recommendations\n\n";
-            
+
             foreach ($report['recommendations'] as $rec) {
                 $priority = isset($rec['priority']) ? strtoupper($rec['priority']) : 'RECOMMENDED';
                 $response .= "### {$rec['title']} [$priority]\n\n";
                 $response .= "{$rec['description']}\n\n";
-                
+
                 if (isset($rec['command'])) {
                     $response .= "```bash\n{$rec['command']}\n```\n\n";
                 }
@@ -563,7 +564,7 @@ class UpgradeRestifyTool extends Tool
 
         // Next Steps
         $response .= "## Next Steps\n\n";
-        
+
         if ($dryRun) {
             $response .= "1. **Review this report** and plan your migration strategy\n";
             $response .= "2. **Run with dry_run=false** to apply changes\n";
@@ -573,12 +574,12 @@ class UpgradeRestifyTool extends Tool
             $response .= "2. **Update your composer.json** to require Laravel Restify ^10.0\n";
             $response .= "3. **Run composer update** to get the latest version\n";
         }
-        
+
         $response .= "4. **Update config file** if issues were found\n";
         $response .= "5. **Update your documentation** to reflect the new syntax\n\n";
 
         // Backup Information
-        if (!empty($report['backups_created'])) {
+        if (! empty($report['backups_created'])) {
             $response .= "## Backups Created\n\n";
             foreach ($report['backups_created'] as $backup) {
                 $response .= "- `$backup`\n";
