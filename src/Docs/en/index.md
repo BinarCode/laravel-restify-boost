@@ -29,6 +29,8 @@ This documentation is for the latest version of Laravel Restify. Please ensure y
 'Handy Response maker',
 'Powerful Search',
 'JSON:API consistency',
+'GraphQL Schema Generation',
+'MCP (Model Context Protocol) Server Generation',
 'Customizable',
 'Laravel Compatible Authorization'
 ]">
