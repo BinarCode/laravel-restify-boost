@@ -7,7 +7,6 @@ namespace BinarCode\RestifyBoost\Mcp\Tools;
 use Generator;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
@@ -108,7 +107,7 @@ class DebugApplicationTool extends Tool
             return $this->generateDebugReport($report, $detailedOutput);
 
         } catch (Throwable $e) {
-            return ToolResult::error('Debug analysis failed: ' . $e->getMessage());
+            return ToolResult::error('Debug analysis failed: '.$e->getMessage());
         }
     }
 
@@ -129,7 +128,7 @@ class DebugApplicationTool extends Tool
             'status' => version_compare($phpVersion, '8.1.0', '>=') ? 'success' : 'warning',
             'value' => $phpVersion,
             'message' => version_compare($phpVersion, '8.1.0', '>=') ? 'PHP version compatible' : 'PHP version may be outdated',
-       ];
+        ];
 
         // Environment check
         $environment = app()->environment();
@@ -162,7 +161,7 @@ class DebugApplicationTool extends Tool
             $checks['cache'] = [
                 'status' => 'error',
                 'value' => 'error',
-                'message' => 'Cache error: ' . $e->getMessage(),
+                'message' => 'Cache error: '.$e->getMessage(),
             ];
         }
 
@@ -199,7 +198,7 @@ class DebugApplicationTool extends Tool
             'connection' => [
                 'status' => 'info',
                 'value' => config('database.default'),
-                'message' => 'Default database connection: ' . config('database.default'),
+                'message' => 'Default database connection: '.config('database.default'),
             ],
         ];
 
@@ -256,7 +255,7 @@ class DebugApplicationTool extends Tool
             } catch (Throwable $e) {
                 $checks['migrations'] = [
                     'status' => 'warning',
-                    'message' => 'Could not check migration status: ' . $e->getMessage(),
+                    'message' => 'Could not check migration status: '.$e->getMessage(),
                 ];
             }
 
@@ -282,14 +281,14 @@ class DebugApplicationTool extends Tool
 
             $checks['query_performance'] = [
                 'status' => $queryTime < 0.1 ? 'success' : 'warning',
-                'value' => round($queryTime * 1000, 2) . 'ms',
+                'value' => round($queryTime * 1000, 2).'ms',
                 'message' => $queryTime < 0.1 ? 'Good query performance' : 'Slow query performance',
             ];
 
         } catch (Throwable $e) {
             $checks['connection'] = [
                 'status' => 'error',
-                'message' => 'Database connection failed: ' . $e->getMessage(),
+                'message' => 'Database connection failed: '.$e->getMessage(),
             ];
         }
 
@@ -352,12 +351,12 @@ class DebugApplicationTool extends Tool
         ];
 
         foreach ($searchPaths as $searchPath) {
-            if (!File::isDirectory($searchPath)) {
+            if (! File::isDirectory($searchPath)) {
                 continue;
             }
 
             try {
-                $finder = new Finder();
+                $finder = new Finder;
                 $finder->files()
                     ->in($searchPath)
                     ->name('*Repository.php')
@@ -500,8 +499,8 @@ class DebugApplicationTool extends Tool
 
         $report['issues'] = $issues;
         $report['summary']['total_issues'] = count($issues);
-        $report['summary']['critical_issues'] = count(array_filter($issues, fn($issue) => $issue['severity'] === 'error'));
-        $report['summary']['warnings'] = count(array_filter($issues, fn($issue) => $issue['severity'] === 'warning'));
+        $report['summary']['critical_issues'] = count(array_filter($issues, fn ($issue) => $issue['severity'] === 'error'));
+        $report['summary']['warnings'] = count(array_filter($issues, fn ($issue) => $issue['severity'] === 'warning'));
     }
 
     protected function extractIssuesFromSection(array $data, string $section, array &$issues): void
@@ -555,7 +554,7 @@ class DebugApplicationTool extends Tool
                     try {
                         Artisan::call('vendor:publish', [
                             '--provider' => 'Binaryk\\LaravelRestify\\LaravelRestifyServiceProvider',
-                            '--tag' => 'config'
+                            '--tag' => 'config',
                         ]);
 
                         return [
@@ -566,7 +565,7 @@ class DebugApplicationTool extends Tool
                     } catch (Throwable $e) {
                         return [
                             'issue' => $issue['message'],
-                            'fix' => 'Failed to publish config: ' . $e->getMessage(),
+                            'fix' => 'Failed to publish config: '.$e->getMessage(),
                             'status' => 'error',
                         ];
                     }
@@ -619,7 +618,7 @@ class DebugApplicationTool extends Tool
 
     protected function exportReport(array $report): void
     {
-        $reportPath = storage_path('logs/debug-report-' . date('Y-m-d-H-i-s') . '.md');
+        $reportPath = storage_path('logs/debug-report-'.date('Y-m-d-H-i-s').'.md');
         $reportContent = $this->generateMarkdownReport($report);
 
         File::put($reportPath, $reportContent);
@@ -628,19 +627,19 @@ class DebugApplicationTool extends Tool
     protected function generateMarkdownReport(array $report): string
     {
         $content = "# Laravel Restify Debug Report\n\n";
-        $content .= "**Generated:** " . date('Y-m-d H:i:s') . "\n\n";
+        $content .= '**Generated:** '.date('Y-m-d H:i:s')."\n\n";
 
         // Summary
         if (isset($report['summary'])) {
             $content .= "## Summary\n\n";
             foreach ($report['summary'] as $key => $value) {
-                $content .= "- **" . ucwords(str_replace('_', ' ', $key)) . ":** $value\n";
+                $content .= '- **'.ucwords(str_replace('_', ' ', $key)).":** $value\n";
             }
             $content .= "\n";
         }
 
         // Issues
-        if (!empty($report['issues'])) {
+        if (! empty($report['issues'])) {
             $content .= "## Issues Found\n\n";
             foreach ($report['issues'] as $issue) {
                 $emoji = $issue['severity'] === 'error' ? '❌' : '⚠️';
@@ -654,7 +653,7 @@ class DebugApplicationTool extends Tool
         }
 
         // Suggestions
-        if (!empty($report['suggestions'])) {
+        if (! empty($report['suggestions'])) {
             $content .= "## Suggestions\n\n";
             foreach ($report['suggestions'] as $suggestion) {
                 $priority = strtoupper($suggestion['priority']);
@@ -686,17 +685,17 @@ class DebugApplicationTool extends Tool
         if (isset($report['summary'])) {
             $response .= "## Summary\n\n";
             foreach ($report['summary'] as $key => $value) {
-                $response .= "- **" . ucwords(str_replace('_', ' ', $key)) . ":** $value\n";
+                $response .= '- **'.ucwords(str_replace('_', ' ', $key)).":** $value\n";
             }
             $response .= "\n";
         }
 
         // Health Check
-        if (!empty($report['health_check'])) {
+        if (! empty($report['health_check'])) {
             $response .= "## System Health\n\n";
             foreach ($report['health_check'] as $check => $result) {
                 $emoji = $this->getStatusEmoji($result['status']);
-                $response .= "$emoji **" . ucwords(str_replace('_', ' ', $check)) . ":** {$result['message']}";
+                $response .= "$emoji **".ucwords(str_replace('_', ' ', $check)).":** {$result['message']}";
                 if (isset($result['value'])) {
                     $response .= " ({$result['value']})";
                 }
@@ -706,11 +705,11 @@ class DebugApplicationTool extends Tool
         }
 
         // Database Check
-        if (!empty($report['database_check'])) {
+        if (! empty($report['database_check'])) {
             $response .= "## Database Health\n\n";
             foreach ($report['database_check'] as $check => $result) {
                 $emoji = $this->getStatusEmoji($result['status']);
-                $response .= "$emoji **" . ucwords(str_replace('_', ' ', $check)) . ":** {$result['message']}";
+                $response .= "$emoji **".ucwords(str_replace('_', ' ', $check)).":** {$result['message']}";
                 if (isset($result['value'])) {
                     $value = is_array($result['value']) ? implode(', ', $result['value']) : $result['value'];
                     $response .= " ($value)";
@@ -721,7 +720,7 @@ class DebugApplicationTool extends Tool
         }
 
         // Restify Analysis
-        if (!empty($report['restify_analysis'])) {
+        if (! empty($report['restify_analysis'])) {
             $response .= "## Restify Analysis\n\n";
 
             if (isset($report['restify_analysis']['repositories'])) {
@@ -729,7 +728,7 @@ class DebugApplicationTool extends Tool
                 $emoji = $this->getStatusEmoji($repos['status']);
                 $response .= "$emoji **Repositories:** {$repos['message']} ({$repos['count']} found)\n";
 
-                if (!empty($repos['list']) && $detailed) {
+                if (! empty($repos['list']) && $detailed) {
                     foreach ($repos['list'] as $repo) {
                         $response .= "  - $repo\n";
                     }
@@ -746,7 +745,7 @@ class DebugApplicationTool extends Tool
         }
 
         // Issues
-        if (!empty($report['issues'])) {
+        if (! empty($report['issues'])) {
             $response .= "## Issues Found\n\n";
             foreach ($report['issues'] as $issue) {
                 $emoji = $issue['severity'] === 'error' ? '❌' : '⚠️';
@@ -756,7 +755,7 @@ class DebugApplicationTool extends Tool
         }
 
         // Fixes Applied
-        if (!empty($report['fixes_applied'])) {
+        if (! empty($report['fixes_applied'])) {
             $response .= "## Automatic Fixes Applied\n\n";
             foreach ($report['fixes_applied'] as $fix) {
                 $emoji = $fix['status'] === 'success' ? '✅' : '❌';
@@ -766,7 +765,7 @@ class DebugApplicationTool extends Tool
         }
 
         // Suggestions
-        if (!empty($report['suggestions'])) {
+        if (! empty($report['suggestions'])) {
             $response .= "## Recommendations\n\n";
             foreach ($report['suggestions'] as $suggestion) {
                 $priority = strtoupper($suggestion['priority']);
@@ -805,11 +804,13 @@ class DebugApplicationTool extends Tool
 
     protected function formatBytes(int $size, int $precision = 2): string
     {
-        if ($size === 0) return '0B';
+        if ($size === 0) {
+            return '0B';
+        }
 
         $base = log($size, 1024);
         $suffixes = ['B', 'KB', 'MB', 'GB', 'TB'];
 
-        return round(pow(1024, $base - floor($base)), $precision) . ' ' . $suffixes[floor($base)];
+        return round(pow(1024, $base - floor($base)), $precision).' '.$suffixes[floor($base)];
     }
 }
