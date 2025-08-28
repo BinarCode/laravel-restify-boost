@@ -6,6 +6,7 @@ namespace BinarCode\RestifyBoost\Mcp\Tools;
 
 use Generator;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Process;
 use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\ToolInputSchema;
@@ -13,9 +14,11 @@ use Laravel\Mcp\Server\Tools\ToolResult;
 
 class InstallRestifyTool extends Tool
 {
+    private const LATEST_CONFIG_URL = 'https://raw.githubusercontent.com/BinarCode/laravel-restify/refs/heads/10.x/config/restify.php';
+
     public function description(): string
     {
-        return 'Install and setup Laravel Restify package with all necessary configurations. This tool handles composer installation, publishes config files, runs setup commands, creates the Restify service provider, scaffolds repositories, and optionally configures authentication middleware and generates mock data.';
+        return 'Install and setup Laravel Restify package with all necessary configurations. This tool handles composer installation, downloads the latest config file from Laravel Restify 10.x, runs setup commands, creates the Restify service provider, scaffolds repositories, and optionally configures authentication middleware and generates mock data.';
     }
 
     public function schema(ToolInputSchema $schema): ToolInputSchema
@@ -41,6 +44,9 @@ class InstallRestifyTool extends Tool
             ->optional()
             ->boolean('force')
             ->description('Force installation even if already installed')
+            ->optional()
+            ->boolean('update_config')
+            ->description('Download and use the latest config file from Laravel Restify 10.x (default: true)')
             ->optional();
     }
 
@@ -54,6 +60,7 @@ class InstallRestifyTool extends Tool
             $generateUsersCount = $arguments['generate_users_count'] ?? 0;
             $generateRepositories = $arguments['generate_repositories'] ?? false;
             $force = $arguments['force'] ?? false;
+            $updateConfig = $arguments['update_config'] ?? true;
 
             // Step 1: Validate environment
             $validationResult = $this->validateEnvironment();
@@ -82,6 +89,12 @@ class InstallRestifyTool extends Tool
             $results[] = $setupResult;
             if (! $setupResult['success']) {
                 return ToolResult::error($setupResult['message']);
+            }
+
+            // Step 4.5: Update config file with latest version
+            if ($updateConfig) {
+                $configResult = $this->updateConfigFile();
+                $results[] = $configResult;
             }
 
             // Step 5: Configure options
@@ -226,6 +239,144 @@ class InstallRestifyTool extends Tool
                 'step' => 'Restify Setup',
                 'message' => 'Setup command failed: '.$e->getMessage(),
             ];
+        }
+    }
+
+    protected function updateConfigFile(): array
+    {
+        try {
+            $configPath = config_path('restify.php');
+            $existingConfig = null;
+            $backupCreated = false;
+
+            // Backup existing config if it exists
+            if (File::exists($configPath)) {
+                $existingConfig = File::get($configPath);
+                $backupPath = $configPath . '.backup-' . date('Y-m-d-H-i-s');
+                File::copy($configPath, $backupPath);
+                $backupCreated = true;
+            }
+
+            // Download latest config file
+            $response = Http::timeout(30)->get(self::LATEST_CONFIG_URL);
+
+            if (!$response->successful()) {
+                return [
+                    'success' => false,
+                    'step' => 'Config Update',
+                    'message' => 'Failed to download latest config file: HTTP ' . $response->status(),
+                ];
+            }
+
+            $latestConfig = $response->body();
+
+            // If we have existing config, try to preserve custom settings
+            if ($existingConfig && $this->configsAreDifferent($existingConfig, $latestConfig)) {
+                $mergedConfig = $this->mergeConfigFiles($existingConfig, $latestConfig);
+                File::put($configPath, $mergedConfig);
+
+                $message = $backupCreated 
+                    ? 'Updated config file with latest version (backup created)'
+                    : 'Updated config file with latest version';
+            } else {
+                // Use the latest config as-is
+                File::put($configPath, $latestConfig);
+                $message = 'Downloaded and installed latest config file';
+            }
+
+            return [
+                'success' => true,
+                'step' => 'Config Update',
+                'message' => $message,
+                'backup_created' => $backupCreated,
+            ];
+
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'step' => 'Config Update',
+                'message' => 'Failed to update config file: ' . $e->getMessage(),
+            ];
+        }
+    }
+
+    protected function configsAreDifferent(string $existing, string $latest): bool
+    {
+        // Simple comparison - if they're identical, no need to merge
+        return trim($existing) !== trim($latest);
+    }
+
+    protected function mergeConfigFiles(string $existing, string $latest): string
+    {
+        try {
+            // Extract custom values from existing config
+            $customValues = $this->extractCustomValues($existing);
+            
+            // Start with the latest config
+            $mergedConfig = $latest;
+            
+            // Apply custom values to the latest config
+            foreach ($customValues as $key => $value) {
+                $mergedConfig = $this->replaceConfigValue($mergedConfig, $key, $value);
+            }
+
+            // Add a comment indicating the merge
+            $timestamp = date('Y-m-d H:i:s');
+            $mergedConfig = str_replace(
+                '<?php',
+                "<?php\n\n// This config was merged with custom values on {$timestamp}\n// Original backed up to restify.php.backup-{$timestamp}",
+                $mergedConfig
+            );
+
+            return $mergedConfig;
+
+        } catch (\Exception $e) {
+            // If merge fails, return the latest config with a warning comment
+            return str_replace(
+                '<?php',
+                "<?php\n\n// Warning: Config merge failed, using latest version.\n// Check backup file for your custom settings.",
+                $latest
+            );
+        }
+    }
+
+    protected function extractCustomValues(string $config): array
+    {
+        $customValues = [];
+
+        // Extract commonly customized values
+        $patterns = [
+            'base' => "/'base'\s*=>\s*'([^']+)'/",
+            'middleware' => "/'middleware'\s*=>\s*(\[[^\]]*\])/s",
+            'auth' => "/'auth'\s*=>\s*(\[[^\]]*\])/s",
+            'cache' => "/'cache'\s*=>\s*(\[[^\]]*\])/s",
+        ];
+
+        foreach ($patterns as $key => $pattern) {
+            if (preg_match($pattern, $config, $matches)) {
+                $customValues[$key] = $key === 'base' ? $matches[1] : $matches[0];
+            }
+        }
+
+        return $customValues;
+    }
+
+    protected function replaceConfigValue(string $config, string $key, string $value): string
+    {
+        switch ($key) {
+            case 'base':
+                return preg_replace(
+                    "/'base'\s*=>\s*'[^']+'/",
+                    "'base' => '{$value}'",
+                    $config
+                );
+            case 'middleware':
+            case 'auth':
+            case 'cache':
+                $pattern = "/'$key'\s*=>\s*\[[^\]]*\]/s";
+                return preg_replace($pattern, $value, $config);
+            default:
+                return $config;
         }
     }
 
@@ -454,14 +605,22 @@ class InstallRestifyTool extends Tool
             $response .= "✅ **Repositories:** Auto-generated for existing models\n";
         }
 
+        if ($arguments['update_config'] ?? true) {
+            $response .= "✅ **Config File:** Updated with latest Laravel Restify 10.x configuration\n";
+        }
+
         // What was created
-        $response .= "\n## Files Created\n\n";
-        $response .= "- `config/restify.php` - Main configuration file\n";
+        $response .= "\n## Files Created/Updated\n\n";
+        $response .= "- `config/restify.php` - Latest configuration file (v10.x)\n";
         $response .= "- `app/Providers/RestifyServiceProvider.php` - Service provider\n";
         $response .= "- `app/Restify/` - Repository directory\n";
         $response .= "- `app/Restify/Repository.php` - Base repository class\n";
         $response .= "- `app/Restify/UserRepository.php` - User repository example\n";
         $response .= "- Database migration for action logs\n";
+        
+        if ($arguments['update_config'] ?? true) {
+            $response .= "- `config/restify.php.backup-*` - Backup of previous config (if existed)\n";
+        }
 
         // API endpoints
         $apiPrefix = $arguments['api_prefix'] ?? '/api/restify';
@@ -478,12 +637,13 @@ class InstallRestifyTool extends Tool
         // Next steps
         $response .= "\n## Next Steps\n\n";
         $response .= "1. **Test the API:** Make a GET request to `{$apiPrefix}/users`\n";
-        $response .= "2. **Create more repositories:** `php artisan restify:repository PostRepository`\n";
-        $response .= "3. **Generate policies:** `php artisan restify:policy UserPolicy`\n";
-        $response .= "4. **Review documentation:** https://restify.binarcode.com\n";
+        $response .= "2. **Review config file:** Check `config/restify.php` for the latest features\n";
+        $response .= "3. **Create more repositories:** `php artisan restify:repository PostRepository`\n";
+        $response .= "4. **Generate policies:** `php artisan restify:policy UserPolicy`\n";
+        $response .= "5. **Review documentation:** https://restify.binarcode.com\n";
 
         if ($arguments['enable_sanctum_auth'] ?? false) {
-            $response .= "5. **Configure Sanctum:** Ensure Laravel Sanctum is properly set up\n";
+            $response .= "6. **Configure Sanctum:** Ensure Laravel Sanctum is properly set up\n";
         }
 
         // Authentication note
@@ -505,7 +665,9 @@ class InstallRestifyTool extends Tool
         $response .= "# Generate mock data\n";
         $response .= "php artisan restify:stub users --count=50\n\n";
         $response .= "# Generate policy\n";
-        $response .= "php artisan restify:policy PostPolicy\n";
+        $response .= "php artisan restify:policy PostPolicy\n\n";
+        $response .= "# Republish config file (to get latest updates)\n";
+        $response .= "php artisan vendor:publish --provider=\"Binaryk\\LaravelRestify\\LaravelRestifyServiceProvider\" --tag=config --force\n";
         $response .= "```\n";
 
         return ToolResult::text($response);
