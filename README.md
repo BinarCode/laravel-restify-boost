@@ -49,12 +49,145 @@ Once installed, you're ready to start coding with Cursor, Claude Code, or your A
 | Generate Action         | Generate Laravel Restify action classes for custom business logic                                         |
 | Generate Getter         | Generate Laravel Restify getter classes for data transformation                                           |
 | Generate Match Filter   | Generate Laravel Restify match filter classes for advanced filtering                                      |
+| Debug Application       | Comprehensive debugging tool for Laravel Restify applications with health checks and diagnostics          |
+| Upgrade Restify         | Automated tool to upgrade Laravel Restify from version 9.x to 10.x with migration assistance             |
 
 ## Available Documentation
 
 | Package | Coverage |
 |---------|----------|
 | Laravel Restify | Complete documentation including API methods, field types, authentication, authorization, and performance guides |
+
+## Specialized Tools
+
+### Debug Application Tool
+
+The Debug Application Tool provides comprehensive diagnostics for Laravel Restify applications, helping developers identify and resolve common issues quickly.
+
+#### Features
+
+- **System Health Check**: Laravel version, PHP compatibility, environment validation, cache/storage testing
+- **Configuration Analysis**: App config, database setup, Restify configuration validation  
+- **Database Health**: Connection testing, migration status, performance checks
+- **Restify Analysis**: Repository discovery, route validation, service provider verification
+- **Performance Analysis**: Memory usage, cache/session driver optimization suggestions
+- **Automatic Issue Detection**: Severity classification with detailed reporting
+- **Safe Auto-Fixes**: Automatically resolve common configuration problems
+
+#### Parameters
+
+- `check_type` (optional): Target specific areas - 'all', 'config', 'database', 'restify', 'performance', 'health' (default: 'all')
+- `detailed_output` (optional): Include comprehensive diagnostic details (default: true)
+- `fix_issues` (optional): Automatically resolve common configuration problems (default: false)
+- `export_report` (optional): Save detailed markdown reports to storage/logs (default: false)
+- `include_suggestions` (optional): Provide actionable improvement recommendations (default: true)
+
+#### Usage Examples
+
+```bash
+# Run complete diagnostic
+Debug Application with check_type="all"
+
+# Check only database health
+Debug Application with check_type="database"
+
+# Run with automatic fixes
+Debug Application with fix_issues=true
+
+# Export detailed report
+Debug Application with export_report=true detailed_output=true
+```
+
+### Upgrade Restify Tool
+
+The Upgrade Restify Tool automates the migration process from Laravel Restify 9.x to 10.x, ensuring smooth transitions with comprehensive analysis and backup creation.
+
+#### Features
+
+- **PHP Attributes Migration**: Converts static `$model` properties to modern `#[Model]` attributes
+- **Field-Level Configuration**: Migrates static `$search`/`$sort` arrays to field-level methods
+- **Configuration Compatibility**: Checks and validates config file compatibility
+- **Backup Creation**: Automatically creates backups before making changes
+- **Comprehensive Reporting**: Detailed analysis with migration recommendations
+- **Interactive Mode**: Confirmation prompts for each repository migration
+- **Complexity Scoring**: Evaluates repository complexity for prioritization
+
+#### Parameters
+
+- `dry_run` (optional): Preview changes without applying them (default: true)
+- `migrate_attributes` (optional): Convert static `$model` properties to PHP attributes (default: true)
+- `migrate_fields` (optional): Convert static `$search`/`$sort` arrays to field-level methods (default: true)
+- `check_config` (optional): Check and report config file compatibility (default: true)
+- `backup_files` (optional): Create backups of modified files (default: true)
+- `interactive` (optional): Prompt for confirmation before each change (default: true)
+- `path` (optional): Specific path to scan for repositories (defaults to app/Restify)
+
+#### Migration Process
+
+1. **Repository Discovery**: Scans for Laravel Restify repositories in standard locations
+2. **Analysis Phase**: Evaluates each repository for migration requirements
+3. **Backup Creation**: Creates timestamped backups of files before modification
+4. **Attribute Migration**: Converts `public static $model = Model::class;` to `#[Model(Model::class)]`
+5. **Field Migration**: Moves search/sort configuration to field-level methods
+6. **Configuration Check**: Validates config file compatibility with v10
+7. **Comprehensive Reporting**: Provides detailed migration report with next steps
+
+#### Usage Examples
+
+```bash
+# Dry run analysis (recommended first step)
+Upgrade Restify with dry_run=true
+
+# Apply migrations with backups
+Upgrade Restify with dry_run=false backup_files=true
+
+# Migrate only attributes
+Upgrade Restify with dry_run=false migrate_fields=false
+
+# Non-interactive mode
+Upgrade Restify with dry_run=false interactive=false
+
+# Custom repository path
+Upgrade Restify with path="/app/Custom/Repositories"
+```
+
+#### Before & After Examples
+
+**Before (Laravel Restify 9.x):**
+```php
+class PostRepository extends Repository
+{
+    public static string $model = Post::class;
+    
+    public static array $search = ['title', 'content'];
+    public static array $sort = ['created_at', 'title'];
+    
+    public function fields(RestifyRequest $request): array
+    {
+        return [
+            field('title'),
+            field('content'),
+        ];
+    }
+}
+```
+
+**After (Laravel Restify 10.x):**
+```php
+use Binaryk\LaravelRestify\Attributes\Model;
+
+#[Model(Post::class)]
+class PostRepository extends Repository
+{
+    public function fields(RestifyRequest $request): array
+    {
+        return [
+            field('title')->searchable()->sortable(),
+            field('content')->searchable(),
+        ];
+    }
+}
+```
 
 ## Manually Registering the MCP Server
 

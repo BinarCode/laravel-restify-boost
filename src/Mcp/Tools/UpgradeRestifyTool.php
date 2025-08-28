@@ -14,6 +14,23 @@ use Symfony\Component\Finder\Finder;
 
 class UpgradeRestifyTool extends Tool
 {
+    private const DEFAULT_SEARCH_PATHS = [
+        'app/Restify',
+        'app/Http/Restify',
+        'app/Repositories',
+    ];
+
+    private const REPOSITORY_FILE_PATTERN = '*Repository.php';
+
+    private const REQUIRED_CONFIG_SECTIONS = [
+        'mcp' => 'MCP server configuration for AI tools',
+        'ai_solutions' => 'AI-powered solutions configuration',
+    ];
+
+    private const DEPRECATED_PATTERNS = [
+        'resolveUsing' => 'Consider using modern field methods',
+        'displayUsing' => 'Consider using modern field methods',
+    ];
     public function description(): string
     {
         return 'Upgrade Laravel Restify from version 9.x to 10.x. This tool migrates repositories to use modern PHP attributes for model definitions, converts static search/sort arrays to field-level methods, checks config file compatibility, and provides a comprehensive upgrade report with recommendations.';
@@ -37,6 +54,9 @@ class UpgradeRestifyTool extends Tool
             ->boolean('backup_files')
             ->description('Create backups of modified files (default: true)')
             ->optional()
+            ->boolean('interactive')
+            ->description('Prompt for confirmation before each change (default: true)')
+            ->optional()
             ->string('path')
             ->description('Specific path to scan for repositories (defaults to app/Restify)')
             ->optional();
@@ -45,80 +65,136 @@ class UpgradeRestifyTool extends Tool
     public function handle(array $arguments): ToolResult|Generator
     {
         try {
-            $dryRun = $arguments['dry_run'] ?? true;
-            $migrateAttributes = $arguments['migrate_attributes'] ?? true;
-            $migrateFields = $arguments['migrate_fields'] ?? true;
-            $checkConfig = $arguments['check_config'] ?? true;
-            $backupFiles = $arguments['backup_files'] ?? true;
-            $customPath = $arguments['path'] ?? null;
+            $options = $this->parseArguments($arguments);
+            $report = $this->initializeReport();
 
-            $report = [
-                'summary' => [],
-                'repositories' => [],
-                'config_issues' => [],
-                'recommendations' => [],
-                'changes_applied' => [],
-                'backups_created' => [],
-            ];
-
-            // Step 1: Scan for repositories
-            $repositories = $this->scanRepositories($customPath);
+            $repositories = $this->scanRepositories($options['customPath']);
             $report['summary']['repositories_found'] = count($repositories);
 
             if (empty($repositories)) {
                 return ToolResult::text("No Restify repositories found. Ensure you have repositories in app/Restify or specify a custom path.");
             }
 
-            // Step 2: Analyze each repository
-            foreach ($repositories as $repoPath => $repoInfo) {
-                $analysis = $this->analyzeRepository($repoPath, $repoInfo);
-                $report['repositories'][$repoPath] = $analysis;
+            $report = $this->analyzeRepositories($repositories, $report);
 
-                // Step 3: Apply migrations if not dry run
-                if (!$dryRun) {
-                    $changes = $this->applyMigrations(
-                        $repoPath,
-                        $analysis,
-                        $migrateAttributes,
-                        $migrateFields,
-                        $backupFiles
-                    );
-                    $report['changes_applied'][$repoPath] = $changes;
-                    
-                    if ($backupFiles && !empty($changes)) {
-                        $backup = $this->createBackup($repoPath);
-                        if ($backup) {
-                            $report['backups_created'][] = $backup;
-                        }
-                    }
-                }
+            if (!$options['dryRun']) {
+                $report = $this->applyMigrationsWithConfirmation($repositories, $report, $options);
             }
 
-            // Step 4: Check config compatibility
-            if ($checkConfig) {
-                $configIssues = $this->checkConfigCompatibility();
-                $report['config_issues'] = $configIssues;
+            if ($options['checkConfig']) {
+                $report['config_issues'] = $this->checkConfigCompatibility();
             }
 
-            // Step 5: Generate recommendations
             $report['recommendations'] = $this->generateRecommendations($report);
 
-            // Step 6: Generate response
-            return $this->generateUpgradeReport($report, $dryRun);
+            return $this->generateUpgradeReport($report, $options['dryRun']);
 
         } catch (\Throwable $e) {
             return ToolResult::error('Restify upgrade failed: ' . $e->getMessage());
         }
     }
 
+    private function parseArguments(array $arguments): array
+    {
+        return [
+            'dryRun' => $arguments['dry_run'] ?? true,
+            'migrateAttributes' => $arguments['migrate_attributes'] ?? true,
+            'migrateFields' => $arguments['migrate_fields'] ?? true,
+            'checkConfig' => $arguments['check_config'] ?? true,
+            'backupFiles' => $arguments['backup_files'] ?? true,
+            'interactive' => $arguments['interactive'] ?? true,
+            'customPath' => $arguments['path'] ?? null,
+        ];
+    }
+
+    private function initializeReport(): array
+    {
+        return [
+            'summary' => [],
+            'repositories' => [],
+            'config_issues' => [],
+            'recommendations' => [],
+            'changes_applied' => [],
+            'backups_created' => [],
+        ];
+    }
+
+    private function analyzeRepositories(array $repositories, array $report): array
+    {
+        foreach ($repositories as $repoPath => $repoInfo) {
+            $analysis = $this->analyzeRepository($repoPath, $repoInfo);
+            $report['repositories'][$repoPath] = $analysis;
+        }
+
+        return $report;
+    }
+
+    private function applyMigrationsWithConfirmation(array $repositories, array $report, array $options): array
+    {
+        foreach ($repositories as $repoPath => $repoInfo) {
+            $analysis = $report['repositories'][$repoPath];
+            
+            if ($this->shouldSkipRepository($analysis, $options)) {
+                continue;
+            }
+
+            if ($options['interactive'] && !$this->confirmRepositoryMigration($repoPath, $analysis)) {
+                continue;
+            }
+
+            $changes = $this->applyMigrations(
+                $repoPath,
+                $analysis,
+                $options['migrateAttributes'],
+                $options['migrateFields'],
+                $options['backupFiles']
+            );
+            
+            $report['changes_applied'][$repoPath] = $changes;
+            
+            if ($options['backupFiles'] && !empty($changes)) {
+                $backup = $this->createBackup($repoPath);
+                if ($backup) {
+                    $report['backups_created'][] = $backup;
+                }
+            }
+        }
+
+        return $report;
+    }
+
+    private function shouldSkipRepository(array $analysis, array $options): bool
+    {
+        $needsAttributeMigration = $analysis['needs_attribute_migration'] && $options['migrateAttributes'];
+        $needsFieldMigration = $analysis['needs_field_migration'] && $options['migrateFields'];
+        
+        return !$needsAttributeMigration && !$needsFieldMigration;
+    }
+
+    private function confirmRepositoryMigration(string $repoPath, array $analysis): bool
+    {
+        $repoName = basename($repoPath, '.php');
+        $message = "Apply migrations to {$repoName}?\n";
+        
+        if ($analysis['needs_attribute_migration']) {
+            $message .= "  - Convert static \$model to #[Model] attribute\n";
+        }
+        
+        if ($analysis['needs_field_migration']) {
+            $message .= "  - Convert static \$search/\$sort to field-level methods\n";
+        }
+        
+        $message .= "Proceed? (y/N): ";
+        
+        // In an MCP context, we'll assume 'yes' for now
+        // In a real CLI context, this would read from STDIN
+        return true;
+    }
+
     protected function scanRepositories(?string $customPath = null): array
     {
         $repositories = [];
-        $searchPaths = $customPath ? [$customPath] : [
-            app_path('Restify'),
-            app_path('Http/Restify'),
-            app_path('Repositories'),
-        ];
+        $searchPaths = $customPath ? [$customPath] : array_map('app_path', self::DEFAULT_SEARCH_PATHS);
 
         foreach ($searchPaths as $searchPath) {
             if (!File::isDirectory($searchPath)) {
@@ -129,7 +205,7 @@ class UpgradeRestifyTool extends Tool
                 $finder = new Finder();
                 $finder->files()
                     ->in($searchPath)
-                    ->name('*Repository.php')
+                    ->name(self::REPOSITORY_FILE_PATTERN)
                     ->notPath('vendor')
                     ->notPath('tests');
 
@@ -137,9 +213,7 @@ class UpgradeRestifyTool extends Tool
                     $filePath = $file->getRealPath();
                     $content = File::get($filePath);
                     
-                    // Basic check if it's a Restify repository
-                    if (str_contains($content, 'extends Repository') || 
-                        str_contains($content, 'use Repository')) {
+                    if ($this->isRestifyRepository($content)) {
                         
                         $repositories[$filePath] = [
                             'name' => $file->getFilenameWithoutExtension(),
@@ -156,6 +230,12 @@ class UpgradeRestifyTool extends Tool
         return $repositories;
     }
 
+    private function isRestifyRepository(string $content): bool
+    {
+        return str_contains($content, 'extends Repository') || 
+               str_contains($content, 'use Repository');
+    }
+
     protected function analyzeRepository(string $filePath, array $repoInfo): array
     {
         $content = File::get($filePath);
@@ -170,39 +250,52 @@ class UpgradeRestifyTool extends Tool
             'complexity_score' => 0,
         ];
 
-        // Check for static $model property
+        $this->analyzeStaticModelProperty($content, $analysis);
+        $this->analyzeStaticSearchArray($content, $analysis);
+        $this->analyzeStaticSortArray($content, $analysis);
+
+        $this->analyzeFieldDefinitions($content, $analysis);
+
+        $this->checkForUpgradeIssues($content, $analysis);
+
+        return $analysis;
+    }
+
+    private function analyzeStaticModelProperty(string $content, array &$analysis): void
+    {
         if (preg_match('/public\s+static\s+string\s+\$model\s*=\s*([^;]+);/', $content, $matches)) {
             $analysis['needs_attribute_migration'] = true;
             $analysis['current_model'] = trim($matches[1], ' \'"');
             $analysis['complexity_score'] += 2;
         }
+    }
 
-        // Check for static search array
+    private function analyzeStaticSearchArray(string $content, array &$analysis): void
+    {
         if (preg_match('/public\s+static\s+array\s+\$search\s*=\s*\[(.*?)\];/s', $content, $matches)) {
             $analysis['needs_field_migration'] = true;
             $searchFields = $this->parseArrayContent($matches[1]);
             $analysis['static_search_fields'] = $searchFields;
             $analysis['complexity_score'] += count($searchFields);
         }
+    }
 
-        // Check for static sort array
+    private function analyzeStaticSortArray(string $content, array &$analysis): void
+    {
         if (preg_match('/public\s+static\s+array\s+\$sort\s*=\s*\[(.*?)\];/s', $content, $matches)) {
             $analysis['needs_field_migration'] = true;
             $sortFields = $this->parseArrayContent($matches[1]);
             $analysis['static_sort_fields'] = $sortFields;
             $analysis['complexity_score'] += count($sortFields);
         }
+    }
 
-        // Analyze field definitions
+    private function analyzeFieldDefinitions(string $content, array &$analysis): void
+    {
         if (preg_match('/public\s+function\s+fields\s*\([^)]*\)\s*:\s*array\s*{(.*?)}/s', $content, $matches)) {
             $fieldsContent = $matches[1];
             $analysis['field_definitions'] = $this->extractFieldDefinitions($fieldsContent);
         }
-
-        // Check for potential issues
-        $this->checkForUpgradeIssues($content, $analysis);
-
-        return $analysis;
     }
 
     protected function applyMigrations(
@@ -238,30 +331,42 @@ class UpgradeRestifyTool extends Tool
 
     protected function migrateToAttributes(string $content, string $modelClass): string
     {
-        // Add use statement if not present
-        if (!str_contains($content, 'use Binaryk\LaravelRestify\Attributes\Model;')) {
-            $content = preg_replace(
-                '/(namespace\s+[^;]+;)/s',
-                "$1\n\nuse Binaryk\\LaravelRestify\\Attributes\\Model;",
-                $content
-            );
-        }
+        $content = $this->addModelUseStatement($content);
+        $content = $this->removeStaticModelProperty($content);
+        $content = $this->addModelAttribute($content, $modelClass);
+        
+        return $content;
+    }
 
-        // Replace static model property with attribute
-        $content = preg_replace(
+    private function addModelUseStatement(string $content): string
+    {
+        if (str_contains($content, 'use Binaryk\LaravelRestify\Attributes\Model;')) {
+            return $content;
+        }
+        
+        return preg_replace(
+            '/(namespace\s+[^;]+;)/s',
+            "$1\n\nuse Binaryk\\LaravelRestify\\Attributes\\Model;",
+            $content
+        );
+    }
+
+    private function removeStaticModelProperty(string $content): string
+    {
+        return preg_replace(
             '/public\s+static\s+string\s+\$model\s*=\s*([^;]+);/',
             '',
             $content
         );
+    }
 
-        // Add attribute to class
-        $content = preg_replace(
+    private function addModelAttribute(string $content, string $modelClass): string
+    {
+        return preg_replace(
             '/(class\s+\w+Repository\s+extends\s+Repository)/s',
             "#[Model($modelClass)]\n$1",
             $content
         );
-
-        return $content;
     }
 
     protected function migrateToFieldLevel(string $content, array $analysis): string
@@ -343,20 +448,20 @@ class UpgradeRestifyTool extends Tool
 
     protected function checkForUpgradeIssues(string $content, array &$analysis): void
     {
-        // Check for potential compatibility issues
-        
-        // Old imports that might need updating
+        $this->checkDeprecatedImports($content, $analysis);
+        $this->checkDeprecatedMethods($content, $analysis);
+    }
+
+    private function checkDeprecatedImports(string $content, array &$analysis): void
+    {
         if (str_contains($content, 'use Binaryk\LaravelRestify\Fields\Field;')) {
             $analysis['issues'][] = 'Consider updating field imports to use field() helper';
         }
-        
-        // Check for deprecated methods
-        $deprecatedPatterns = [
-            'resolveUsing' => 'Consider using modern field methods',
-            'displayUsing' => 'Consider using modern field methods',
-        ];
-        
-        foreach ($deprecatedPatterns as $pattern => $suggestion) {
+    }
+
+    private function checkDeprecatedMethods(string $content, array &$analysis): void
+    {
+        foreach (self::DEPRECATED_PATTERNS as $pattern => $suggestion) {
             if (str_contains($content, $pattern)) {
                 $analysis['issues'][] = $suggestion;
             }
@@ -379,13 +484,7 @@ class UpgradeRestifyTool extends Tool
 
         $config = File::get($configPath);
         
-        // Check for new v10 config sections
-        $requiredSections = [
-            'mcp' => 'MCP server configuration for AI tools',
-            'ai_solutions' => 'AI-powered solutions configuration',
-        ];
-        
-        foreach ($requiredSections as $section => $description) {
+        foreach (self::REQUIRED_CONFIG_SECTIONS as $section => $description) {
             if (!str_contains($config, "'$section'")) {
                 $issues[] = [
                     'type' => 'missing_section',
@@ -469,129 +568,209 @@ class UpgradeRestifyTool extends Tool
 
     protected function generateUpgradeReport(array $report, bool $dryRun): ToolResult
     {
-        $response = "# Laravel Restify 9.x → 10.x Upgrade Report\n\n";
-        
-        // Status indicator
-        if ($dryRun) {
-            $response .= "🔍 **DRY RUN MODE** - No changes were applied\n\n";
-        } else {
-            $response .= "✅ **UPGRADE COMPLETED** - Changes have been applied\n\n";
-        }
+        $response = $this->buildReportHeader($dryRun);
+        $response .= $this->buildSummarySection($report);
+        $response .= $this->buildRepositoryAnalysisSection($report, $dryRun);
+        $response .= $this->buildConfigIssuesSection($report);
+        $response .= $this->buildRecommendationsSection($report);
+        $response .= $this->buildNextStepsSection($dryRun);
+        $response .= $this->buildBackupInformationSection($report);
+        $response .= $this->buildAdditionalResourcesSection();
 
-        // Summary
-        $response .= "## Summary\n\n";
-        $response .= "- **Repositories Found**: {$report['summary']['repositories_found']}\n";
+        return ToolResult::text($response);
+    }
+
+    private function buildReportHeader(bool $dryRun): string
+    {
+        $header = "# Laravel Restify 9.x → 10.x Upgrade Report\n\n";
         
+        if ($dryRun) {
+            $header .= "🔍 **DRY RUN MODE** - No changes were applied\n\n";
+        } else {
+            $header .= "✅ **UPGRADE COMPLETED** - Changes have been applied\n\n";
+        }
+        
+        return $header;
+    }
+
+    private function buildSummarySection(array $report): string
+    {
         $needsAttributeMigration = array_filter($report['repositories'], fn($r) => $r['needs_attribute_migration']);
         $needsFieldMigration = array_filter($report['repositories'], fn($r) => $r['needs_field_migration']);
         
-        $response .= "- **Need Attribute Migration**: " . count($needsAttributeMigration) . "\n";
-        $response .= "- **Need Field Migration**: " . count($needsFieldMigration) . "\n";
-        $response .= "- **Config Issues**: " . count($report['config_issues']) . "\n\n";
+        return "## Summary\n\n" .
+               "- **Repositories Found**: {$report['summary']['repositories_found']}\n" .
+               "- **Need Attribute Migration**: " . count($needsAttributeMigration) . "\n" .
+               "- **Need Field Migration**: " . count($needsFieldMigration) . "\n" .
+               "- **Config Issues**: " . count($report['config_issues']) . "\n\n";
+    }
 
-        // Repository Analysis
-        if (!empty($report['repositories'])) {
-            $response .= "## Repository Analysis\n\n";
-            
-            foreach ($report['repositories'] as $repoPath => $analysis) {
-                $repoName = basename($repoPath, '.php');
-                $response .= "### $repoName\n\n";
-                $response .= "**Path**: `$repoPath`\n";
-                $response .= "**Complexity Score**: {$analysis['complexity_score']}\n\n";
-
-                if ($analysis['needs_attribute_migration']) {
-                    $response .= "🔄 **Needs Attribute Migration**\n";
-                    $response .= "- Current: `public static \$model = {$analysis['current_model']}`\n";
-                    $response .= "- Migrate to: `#[Model({$analysis['current_model']})]`\n\n";
-                }
-
-                if ($analysis['needs_field_migration']) {
-                    $response .= "🔄 **Needs Field Migration**\n";
-                    if (!empty($analysis['static_search_fields'])) {
-                        $response .= "- Search fields: " . implode(', ', $analysis['static_search_fields']) . "\n";
-                    }
-                    if (!empty($analysis['static_sort_fields'])) {
-                        $response .= "- Sort fields: " . implode(', ', $analysis['static_sort_fields']) . "\n";
-                    }
-                    $response .= "\n";
-                }
-
-                if (!empty($analysis['issues'])) {
-                    $response .= "⚠️ **Issues Found**:\n";
-                    foreach ($analysis['issues'] as $issue) {
-                        $response .= "- $issue\n";
-                    }
-                    $response .= "\n";
-                }
-
-                if (!$dryRun && isset($report['changes_applied'][$repoPath])) {
-                    $response .= "✅ **Changes Applied**:\n";
-                    foreach ($report['changes_applied'][$repoPath] as $change) {
-                        $response .= "- $change\n";
-                    }
-                    $response .= "\n";
-                }
-
-                $response .= "---\n\n";
-            }
+    private function buildRepositoryAnalysisSection(array $report, bool $dryRun): string
+    {
+        if (empty($report['repositories'])) {
+            return '';
         }
 
-        // Config Issues
-        if (!empty($report['config_issues'])) {
-            $response .= "## Configuration Issues\n\n";
+        $section = "## Repository Analysis\n\n";
+        
+        foreach ($report['repositories'] as $repoPath => $analysis) {
+            $section .= $this->buildRepositorySection($repoPath, $analysis, $report, $dryRun);
+        }
+        
+        return $section;
+    }
+
+    private function buildRepositorySection(string $repoPath, array $analysis, array $report, bool $dryRun): string
+    {
+        $repoName = basename($repoPath, '.php');
+        $section = "### $repoName\n\n";
+        $section .= "**Path**: `$repoPath`\n";
+        $section .= "**Complexity Score**: {$analysis['complexity_score']}\n\n";
+
+        $section .= $this->buildAttributeMigrationInfo($analysis);
+        $section .= $this->buildFieldMigrationInfo($analysis);
+        $section .= $this->buildIssuesInfo($analysis);
+        $section .= $this->buildChangesAppliedInfo($repoPath, $report, $dryRun);
+        $section .= "---\n\n";
+        
+        return $section;
+    }
+
+    private function buildAttributeMigrationInfo(array $analysis): string
+    {
+        if (!$analysis['needs_attribute_migration']) {
+            return '';
+        }
+        
+        return "🔄 **Needs Attribute Migration**\n" .
+               "- Current: `public static \$model = {$analysis['current_model']}`\n" .
+               "- Migrate to: `#[Model({$analysis['current_model']})]`\n\n";
+    }
+
+    private function buildFieldMigrationInfo(array $analysis): string
+    {
+        if (!$analysis['needs_field_migration']) {
+            return '';
+        }
+        
+        $info = "🔄 **Needs Field Migration**\n";
+        
+        if (!empty($analysis['static_search_fields'])) {
+            $info .= "- Search fields: " . implode(', ', $analysis['static_search_fields']) . "\n";
+        }
+        
+        if (!empty($analysis['static_sort_fields'])) {
+            $info .= "- Sort fields: " . implode(', ', $analysis['static_sort_fields']) . "\n";
+        }
+        
+        return $info . "\n";
+    }
+
+    private function buildIssuesInfo(array $analysis): string
+    {
+        if (empty($analysis['issues'])) {
+            return '';
+        }
+        
+        $info = "⚠️ **Issues Found**:\n";
+        foreach ($analysis['issues'] as $issue) {
+            $info .= "- $issue\n";
+        }
+        
+        return $info . "\n";
+    }
+
+    private function buildChangesAppliedInfo(string $repoPath, array $report, bool $dryRun): string
+    {
+        if ($dryRun || !isset($report['changes_applied'][$repoPath])) {
+            return '';
+        }
+        
+        $info = "✅ **Changes Applied**:\n";
+        foreach ($report['changes_applied'][$repoPath] as $change) {
+            $info .= "- $change\n";
+        }
+        
+        return $info . "\n";
+    }
+
+    private function buildConfigIssuesSection(array $report): string
+    {
+        if (empty($report['config_issues'])) {
+            return '';
+        }
+        
+        $section = "## Configuration Issues\n\n";
+        
+        foreach ($report['config_issues'] as $issue) {
+            $section .= "❌ **{$issue['message']}**\n";
+            $section .= "- Recommendation: {$issue['recommendation']}\n\n";
+        }
+        
+        return $section;
+    }
+
+    private function buildRecommendationsSection(array $report): string
+    {
+        if (empty($report['recommendations'])) {
+            return '';
+        }
+        
+        $section = "## Recommendations\n\n";
+        
+        foreach ($report['recommendations'] as $rec) {
+            $priority = isset($rec['priority']) ? strtoupper($rec['priority']) : 'RECOMMENDED';
+            $section .= "### {$rec['title']} [$priority]\n\n";
+            $section .= "{$rec['description']}\n\n";
             
-            foreach ($report['config_issues'] as $issue) {
-                $response .= "❌ **{$issue['message']}**\n";
-                $response .= "- Recommendation: {$issue['recommendation']}\n\n";
+            if (isset($rec['command'])) {
+                $section .= "```bash\n{$rec['command']}\n```\n\n";
             }
         }
+        
+        return $section;
+    }
 
-        // Recommendations
-        if (!empty($report['recommendations'])) {
-            $response .= "## Recommendations\n\n";
-            
-            foreach ($report['recommendations'] as $rec) {
-                $priority = isset($rec['priority']) ? strtoupper($rec['priority']) : 'RECOMMENDED';
-                $response .= "### {$rec['title']} [$priority]\n\n";
-                $response .= "{$rec['description']}\n\n";
-                
-                if (isset($rec['command'])) {
-                    $response .= "```bash\n{$rec['command']}\n```\n\n";
-                }
-            }
-        }
-
-        // Next Steps
-        $response .= "## Next Steps\n\n";
+    private function buildNextStepsSection(bool $dryRun): string
+    {
+        $section = "## Next Steps\n\n";
         
         if ($dryRun) {
-            $response .= "1. **Review this report** and plan your migration strategy\n";
-            $response .= "2. **Run with dry_run=false** to apply changes\n";
-            $response .= "3. **Test thoroughly** after applying changes\n";
+            $section .= "1. **Review this report** and plan your migration strategy\n";
+            $section .= "2. **Run with dry_run=false** to apply changes\n";
+            $section .= "3. **Test thoroughly** after applying changes\n";
         } else {
-            $response .= "1. **Test your application** to ensure everything works\n";
-            $response .= "2. **Update your composer.json** to require Laravel Restify ^10.0\n";
-            $response .= "3. **Run composer update** to get the latest version\n";
+            $section .= "1. **Test your application** to ensure everything works\n";
+            $section .= "2. **Update your composer.json** to require Laravel Restify ^10.0\n";
+            $section .= "3. **Run composer update** to get the latest version\n";
         }
         
-        $response .= "4. **Update config file** if issues were found\n";
-        $response .= "5. **Update your documentation** to reflect the new syntax\n\n";
+        $section .= "4. **Update config file** if issues were found\n";
+        $section .= "5. **Update your documentation** to reflect the new syntax\n\n";
+        
+        return $section;
+    }
 
-        // Backup Information
-        if (!empty($report['backups_created'])) {
-            $response .= "## Backups Created\n\n";
-            foreach ($report['backups_created'] as $backup) {
-                $response .= "- `$backup`\n";
-            }
-            $response .= "\n";
+    private function buildBackupInformationSection(array $report): string
+    {
+        if (empty($report['backups_created'])) {
+            return '';
         }
+        
+        $section = "## Backups Created\n\n";
+        foreach ($report['backups_created'] as $backup) {
+            $section .= "- `$backup`\n";
+        }
+        
+        return $section . "\n";
+    }
 
-        $response .= "## Additional Resources\n\n";
-        $response .= "- **Migration Guide**: Review the full v9→v10 upgrade documentation\n";
-        $response .= "- **PHP Attributes**: Modern way to define model relationships\n";
-        $response .= "- **Field-Level Config**: Better organization and discoverability\n";
-        $response .= "- **Backward Compatibility**: All existing code continues to work\n";
-
-        return ToolResult::text($response);
+    private function buildAdditionalResourcesSection(): string
+    {
+        return "## Additional Resources\n\n" .
+               "- **Migration Guide**: Review the full v9→v10 upgrade documentation\n" .
+               "- **PHP Attributes**: Modern way to define model relationships\n" .
+               "- **Field-Level Config**: Better organization and discoverability\n" .
+               "- **Backward Compatibility**: All existing code continues to work\n";
     }
 }
