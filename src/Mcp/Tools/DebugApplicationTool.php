@@ -129,7 +129,7 @@ class DebugApplicationTool extends Tool
             'status' => version_compare($phpVersion, '8.1.0', '>=') ? 'success' : 'warning',
             'value' => $phpVersion,
             'message' => version_compare($phpVersion, '8.1.0', '>=') ? 'PHP version compatible' : 'PHP version may be outdated',
-        ];
+       ];
 
         // Environment check
         $environment = app()->environment();
@@ -152,7 +152,7 @@ class DebugApplicationTool extends Tool
             Cache::put('debug_test', 'test', 10);
             $cacheWorks = Cache::get('debug_test') === 'test';
             Cache::forget('debug_test');
-            
+
             $checks['cache'] = [
                 'status' => $cacheWorks ? 'success' : 'error',
                 'value' => config('cache.default'),
@@ -214,7 +214,7 @@ class DebugApplicationTool extends Tool
 
         if (File::exists($restifyConfigPath)) {
             $restifyConfig = include $restifyConfigPath;
-            
+
             $analysis['restify_config']['middleware'] = [
                 'status' => isset($restifyConfig['middleware']) ? 'success' : 'warning',
                 'value' => isset($restifyConfig['middleware']) ? count($restifyConfig['middleware']) : 0,
@@ -366,7 +366,7 @@ class DebugApplicationTool extends Tool
                 foreach ($finder as $file) {
                     $filePath = $file->getRealPath();
                     $content = File::get($filePath);
-                    
+
                     if (str_contains($content, 'extends Repository') || str_contains($content, 'use Repository')) {
                         $repositories[$filePath] = [
                             'name' => $file->getFilenameWithoutExtension(),
@@ -396,7 +396,7 @@ class DebugApplicationTool extends Tool
         // Check for fields method
         if (preg_match('/public\s+function\s+fields\s*\([^)]*\)\s*:\s*array/', $content)) {
             $analysis['has_fields_method'] = true;
-            
+
             // Count fields
             if (preg_match('/public\s+function\s+fields\s*\([^)]*\)\s*:\s*array\s*{(.*?)}/s', $content, $matches)) {
                 $fieldsContent = $matches[1];
@@ -423,7 +423,7 @@ class DebugApplicationTool extends Tool
         // Check for relationships
         if (preg_match('/public\s+static\s+function\s+include\s*\(\)\s*:\s*array/', $content)) {
             $analysis['has_relationships'] = true;
-            
+
             // Count relationships
             if (preg_match('/public\s+static\s+function\s+include\s*\(\)\s*:\s*array\s*{(.*?)}/s', $content, $matches)) {
                 $includeContent = $matches[1];
@@ -435,7 +435,7 @@ class DebugApplicationTool extends Tool
         }
 
         // Check for authorization
-        if (str_contains($content, 'public function allowedToShow') || 
+        if (str_contains($content, 'public function allowedToShow') ||
             str_contains($content, 'public function allowedToStore') ||
             str_contains($content, 'public function allowedToUpdate')) {
             $analysis['has_authorization'] = true;
@@ -557,7 +557,7 @@ class DebugApplicationTool extends Tool
                             '--provider' => 'Binaryk\\LaravelRestify\\LaravelRestifyServiceProvider',
                             '--tag' => 'config'
                         ]);
-                        
+
                         return [
                             'issue' => $issue['message'],
                             'fix' => 'Published Restify config file',
@@ -582,7 +582,7 @@ class DebugApplicationTool extends Tool
         $suggestions = [];
 
         // Performance suggestions
-        if (isset($report['performance_check']['cache_driver']['status']) && 
+        if (isset($report['performance_check']['cache_driver']['status']) &&
             $report['performance_check']['cache_driver']['status'] === 'warning') {
             $suggestions[] = [
                 'category' => 'performance',
@@ -621,7 +621,7 @@ class DebugApplicationTool extends Tool
     {
         $reportPath = storage_path('logs/debug-report-' . date('Y-m-d-H-i-s') . '.md');
         $reportContent = $this->generateMarkdownReport($report);
-        
+
         File::put($reportPath, $reportContent);
     }
 
@@ -669,11 +669,11 @@ class DebugApplicationTool extends Tool
     protected function generateDebugReport(array $report, bool $detailed): ToolResult
     {
         $response = "# Laravel Restify Debug Report\n\n";
-        
+
         // Overall status
         $criticalIssues = $report['summary']['critical_issues'] ?? 0;
         $warnings = $report['summary']['warnings'] ?? 0;
-        
+
         if ($criticalIssues > 0) {
             $response .= "🔴 **Status: CRITICAL** - $criticalIssues critical issues found\n\n";
         } elseif ($warnings > 0) {
@@ -723,25 +723,25 @@ class DebugApplicationTool extends Tool
         // Restify Analysis
         if (!empty($report['restify_analysis'])) {
             $response .= "## Restify Analysis\n\n";
-            
+
             if (isset($report['restify_analysis']['repositories'])) {
                 $repos = $report['restify_analysis']['repositories'];
                 $emoji = $this->getStatusEmoji($repos['status']);
                 $response .= "$emoji **Repositories:** {$repos['message']} ({$repos['count']} found)\n";
-                
+
                 if (!empty($repos['list']) && $detailed) {
                     foreach ($repos['list'] as $repo) {
                         $response .= "  - $repo\n";
                     }
                 }
             }
-            
+
             if (isset($report['restify_analysis']['routes'])) {
                 $routes = $report['restify_analysis']['routes'];
                 $emoji = $this->getStatusEmoji($routes['status']);
                 $response .= "$emoji **Routes:** {$routes['message']} ({$routes['count']} found)\n";
             }
-            
+
             $response .= "\n";
         }
 
@@ -785,7 +785,7 @@ class DebugApplicationTool extends Tool
         } else {
             $response .= "1. **System looks healthy!** Consider the recommendations above for optimization\n";
         }
-        
+
         $response .= "2. **Run with fix_issues=true** to automatically fix common problems\n";
         $response .= "3. **Export detailed report** with export_report=true for documentation\n";
 
@@ -806,10 +806,10 @@ class DebugApplicationTool extends Tool
     protected function formatBytes(int $size, int $precision = 2): string
     {
         if ($size === 0) return '0B';
-        
+
         $base = log($size, 1024);
         $suffixes = ['B', 'KB', 'MB', 'GB', 'TB'];
-        
+
         return round(pow(1024, $base - floor($base)), $precision) . ' ' . $suffixes[floor($base)];
     }
 }

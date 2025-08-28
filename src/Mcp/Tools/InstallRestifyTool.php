@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace BinarCode\RestifyBoost\Mcp\Tools;
 
 use Generator;
-use Illuminate\Process\Pool;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Process;
 use Laravel\Mcp\Server\Tool;
@@ -58,12 +57,12 @@ class InstallRestifyTool extends Tool
 
             // Step 1: Validate environment
             $validationResult = $this->validateEnvironment();
-            if (!$validationResult['success']) {
+            if (! $validationResult['success']) {
                 return ToolResult::error($validationResult['message']);
             }
 
             // Step 2: Check if already installed
-            if (!$force && $this->isRestifyAlreadyInstalled()) {
+            if (! $force && $this->isRestifyAlreadyInstalled()) {
                 return ToolResult::error(
                     'Laravel Restify is already installed. Use "force: true" to reinstall.'
                 );
@@ -74,14 +73,14 @@ class InstallRestifyTool extends Tool
             // Step 3: Install composer package
             $installResult = $this->installComposerPackage();
             $results[] = $installResult;
-            if (!$installResult['success']) {
+            if (! $installResult['success']) {
                 return ToolResult::error($installResult['message']);
             }
 
             // Step 4: Run restify setup
             $setupResult = $this->runRestifySetup();
             $results[] = $setupResult;
-            if (!$setupResult['success']) {
+            if (! $setupResult['success']) {
                 return ToolResult::error($setupResult['message']);
             }
 
@@ -119,17 +118,17 @@ class InstallRestifyTool extends Tool
             return $this->generateSuccessResponse($results, $arguments);
 
         } catch (\Throwable $e) {
-            return ToolResult::error('Restify installation failed: ' . $e->getMessage());
+            return ToolResult::error('Restify installation failed: '.$e->getMessage());
         }
     }
 
     protected function validateEnvironment(): array
     {
         // Check if this is a Laravel project
-        if (!File::exists(base_path('artisan'))) {
+        if (! File::exists(base_path('artisan'))) {
             return [
                 'success' => false,
-                'message' => 'This is not a Laravel project (artisan file not found)'
+                'message' => 'This is not a Laravel project (artisan file not found)',
             ];
         }
 
@@ -137,16 +136,16 @@ class InstallRestifyTool extends Tool
         if (version_compare(PHP_VERSION, '8.0.0', '<')) {
             return [
                 'success' => false,
-                'message' => 'PHP 8.0 or higher is required. Current version: ' . PHP_VERSION
+                'message' => 'PHP 8.0 or higher is required. Current version: '.PHP_VERSION,
             ];
         }
 
         // Check if composer is available
         $composerCheck = Process::run('composer --version');
-        if (!$composerCheck->successful()) {
+        if (! $composerCheck->successful()) {
             return [
                 'success' => false,
-                'message' => 'Composer is not available or not in PATH'
+                'message' => 'Composer is not available or not in PATH',
             ];
         }
 
@@ -160,7 +159,7 @@ class InstallRestifyTool extends Tool
         if (File::exists($composerFile)) {
             $composer = json_decode(File::get($composerFile), true);
             $require = $composer['require'] ?? [];
-            
+
             if (isset($require['binaryk/laravel-restify'])) {
                 return true;
             }
@@ -178,26 +177,26 @@ class InstallRestifyTool extends Tool
     {
         try {
             $result = Process::timeout(300)->run('composer require binaryk/laravel-restify');
-            
+
             if ($result->successful()) {
                 return [
                     'success' => true,
                     'step' => 'Package Installation',
-                    'message' => 'Laravel Restify package installed successfully'
+                    'message' => 'Laravel Restify package installed successfully',
                 ];
             }
 
             return [
                 'success' => false,
                 'step' => 'Package Installation',
-                'message' => 'Failed to install Laravel Restify: ' . $result->errorOutput()
+                'message' => 'Failed to install Laravel Restify: '.$result->errorOutput(),
             ];
 
         } catch (\Exception $e) {
             return [
                 'success' => false,
-                'step' => 'Package Installation', 
-                'message' => 'Composer installation failed: ' . $e->getMessage()
+                'step' => 'Package Installation',
+                'message' => 'Composer installation failed: '.$e->getMessage(),
             ];
         }
     }
@@ -211,21 +210,21 @@ class InstallRestifyTool extends Tool
                 return [
                     'success' => true,
                     'step' => 'Restify Setup',
-                    'message' => 'Restify setup completed successfully'
+                    'message' => 'Restify setup completed successfully',
                 ];
             }
 
             return [
                 'success' => false,
                 'step' => 'Restify Setup',
-                'message' => 'Restify setup failed: ' . $result->errorOutput()
+                'message' => 'Restify setup failed: '.$result->errorOutput(),
             ];
 
         } catch (\Exception $e) {
             return [
                 'success' => false,
                 'step' => 'Restify Setup',
-                'message' => 'Setup command failed: ' . $e->getMessage()
+                'message' => 'Setup command failed: '.$e->getMessage(),
             ];
         }
     }
@@ -234,12 +233,12 @@ class InstallRestifyTool extends Tool
     {
         try {
             $configPath = config_path('restify.php');
-            
-            if (!File::exists($configPath)) {
+
+            if (! File::exists($configPath)) {
                 return [
                     'success' => false,
                     'step' => 'Sanctum Configuration',
-                    'message' => 'Restify config file not found'
+                    'message' => 'Restify config file not found',
                 ];
             }
 
@@ -255,14 +254,14 @@ class InstallRestifyTool extends Tool
             return [
                 'success' => true,
                 'step' => 'Sanctum Configuration',
-                'message' => 'Sanctum authentication enabled in restify.php'
+                'message' => 'Sanctum authentication enabled in restify.php',
             ];
 
         } catch (\Exception $e) {
             return [
                 'success' => false,
                 'step' => 'Sanctum Configuration',
-                'message' => 'Failed to enable Sanctum: ' . $e->getMessage()
+                'message' => 'Failed to enable Sanctum: '.$e->getMessage(),
             ];
         }
     }
@@ -271,12 +270,12 @@ class InstallRestifyTool extends Tool
     {
         try {
             $configPath = config_path('restify.php');
-            
-            if (!File::exists($configPath)) {
+
+            if (! File::exists($configPath)) {
                 return [
                     'success' => false,
                     'step' => 'API Prefix Configuration',
-                    'message' => 'Restify config file not found'
+                    'message' => 'Restify config file not found',
                 ];
             }
 
@@ -292,14 +291,14 @@ class InstallRestifyTool extends Tool
             return [
                 'success' => true,
                 'step' => 'API Prefix Configuration',
-                'message' => "API prefix updated to: {$prefix}"
+                'message' => "API prefix updated to: {$prefix}",
             ];
 
         } catch (\Exception $e) {
             return [
                 'success' => false,
                 'step' => 'API Prefix Configuration',
-                'message' => 'Failed to update API prefix: ' . $e->getMessage()
+                'message' => 'Failed to update API prefix: '.$e->getMessage(),
             ];
         }
     }
@@ -313,21 +312,21 @@ class InstallRestifyTool extends Tool
                 return [
                     'success' => true,
                     'step' => 'Migrations',
-                    'message' => 'Migrations completed successfully'
+                    'message' => 'Migrations completed successfully',
                 ];
             }
 
             return [
                 'success' => false,
                 'step' => 'Migrations',
-                'message' => 'Migration failed: ' . $result->errorOutput()
+                'message' => 'Migration failed: '.$result->errorOutput(),
             ];
 
         } catch (\Exception $e) {
             return [
                 'success' => false,
                 'step' => 'Migrations',
-                'message' => 'Migration command failed: ' . $e->getMessage()
+                'message' => 'Migration command failed: '.$e->getMessage(),
             ];
         }
     }
@@ -341,21 +340,21 @@ class InstallRestifyTool extends Tool
                 return [
                     'success' => true,
                     'step' => 'Doctrine DBAL Installation',
-                    'message' => 'doctrine/dbal installed successfully'
+                    'message' => 'doctrine/dbal installed successfully',
                 ];
             }
 
             return [
                 'success' => false,
                 'step' => 'Doctrine DBAL Installation',
-                'message' => 'Failed to install doctrine/dbal: ' . $result->errorOutput()
+                'message' => 'Failed to install doctrine/dbal: '.$result->errorOutput(),
             ];
 
         } catch (\Exception $e) {
             return [
                 'success' => false,
                 'step' => 'Doctrine DBAL Installation',
-                'message' => 'Doctrine DBAL installation failed: ' . $e->getMessage()
+                'message' => 'Doctrine DBAL installation failed: '.$e->getMessage(),
             ];
         }
     }
@@ -369,21 +368,21 @@ class InstallRestifyTool extends Tool
                 return [
                     'success' => true,
                     'step' => 'Mock Data Generation',
-                    'message' => "Generated {$count} mock users successfully"
+                    'message' => "Generated {$count} mock users successfully",
                 ];
             }
 
             return [
                 'success' => false,
                 'step' => 'Mock Data Generation',
-                'message' => 'Failed to generate mock users: ' . $result->errorOutput()
+                'message' => 'Failed to generate mock users: '.$result->errorOutput(),
             ];
 
         } catch (\Exception $e) {
             return [
                 'success' => false,
                 'step' => 'Mock Data Generation',
-                'message' => 'Mock data generation failed: ' . $e->getMessage()
+                'message' => 'Mock data generation failed: '.$e->getMessage(),
             ];
         }
     }
@@ -397,21 +396,21 @@ class InstallRestifyTool extends Tool
                 return [
                     'success' => true,
                     'step' => 'Repository Generation',
-                    'message' => 'Repositories generated for existing models'
+                    'message' => 'Repositories generated for existing models',
                 ];
             }
 
             return [
                 'success' => false,
                 'step' => 'Repository Generation',
-                'message' => 'Repository generation failed: ' . $result->errorOutput()
+                'message' => 'Repository generation failed: '.$result->errorOutput(),
             ];
 
         } catch (\Exception $e) {
             return [
                 'success' => false,
                 'step' => 'Repository Generation',
-                'message' => 'Repository generation failed: ' . $e->getMessage()
+                'message' => 'Repository generation failed: '.$e->getMessage(),
             ];
         }
     }
@@ -419,10 +418,10 @@ class InstallRestifyTool extends Tool
     protected function generateSuccessResponse(array $results, array $arguments): ToolResult
     {
         $response = "# Laravel Restify Installation Complete! 🎉\n\n";
-        
+
         // Installation summary
         $response .= "## Installation Summary\n\n";
-        
+
         foreach ($results as $result) {
             if (isset($result['step'])) {
                 $icon = $result['success'] ? '✅' : '❌';
@@ -432,12 +431,12 @@ class InstallRestifyTool extends Tool
 
         // Configuration summary
         $response .= "\n## Configuration Applied\n\n";
-        
+
         if ($arguments['enable_sanctum_auth'] ?? false) {
             $response .= "✅ **Sanctum Authentication:** Enabled\n";
         }
 
-        if (!empty($arguments['api_prefix'])) {
+        if (! empty($arguments['api_prefix'])) {
             $response .= "✅ **API Prefix:** `{$arguments['api_prefix']}`\n";
         } else {
             $response .= "ℹ️ **API Prefix:** `/api/restify` (default)\n";
