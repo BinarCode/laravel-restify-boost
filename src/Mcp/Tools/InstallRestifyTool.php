@@ -18,7 +18,7 @@ class InstallRestifyTool extends Tool
 
     public function description(): string
     {
-        return 'Install and setup Laravel Restify package with all necessary configurations. This tool handles composer installation, downloads the latest config file from Laravel Restify 10.x, runs setup commands, creates the Restify service provider, scaffolds repositories, and optionally configures authentication middleware and generates mock data.';
+        return 'Install and setup Laravel Restify package with all necessary configurations. This tool handles composer installation, downloads the latest config file from Laravel Restify 10.x, runs setup commands, creates the Restify service provider, scaffolds repositories, optionally configures authentication middleware, generates mock data, and can setup MCP (Model Context Protocol) server routes for AI integration.';
     }
 
     public function schema(ToolInputSchema $schema): ToolInputSchema
@@ -47,6 +47,9 @@ class InstallRestifyTool extends Tool
             ->optional()
             ->boolean('update_config')
             ->description('Download and use the latest config file from Laravel Restify 10.x (default: true)')
+            ->optional()
+            ->boolean('setup_mcp')
+            ->description('Setup MCP (Model Context Protocol) server routes for AI integration (default: false)')
             ->optional();
     }
 
@@ -61,6 +64,7 @@ class InstallRestifyTool extends Tool
             $generateRepositories = $arguments['generate_repositories'] ?? false;
             $force = $arguments['force'] ?? false;
             $updateConfig = $arguments['update_config'] ?? true;
+            $setupMcp = $arguments['setup_mcp'] ?? false;
 
             // Step 1: Validate environment
             $validationResult = $this->validateEnvironment();
@@ -126,6 +130,11 @@ class InstallRestifyTool extends Tool
             // Step 9: Generate repositories if requested
             if ($generateRepositories) {
                 $results[] = $this->generateRepositoriesForModels();
+            }
+
+            // Step 10: Setup MCP if requested
+            if ($setupMcp) {
+                $results[] = $this->setupMcpRoutes();
             }
 
             return $this->generateSuccessResponse($results, $arguments);
@@ -566,6 +575,90 @@ class InstallRestifyTool extends Tool
         }
     }
 
+    protected function setupMcpRoutes(): array
+    {
+        try {
+            $routesPath = base_path('routes/ai.php');
+            
+            // Check if routes/ai.php already exists
+            if (File::exists($routesPath)) {
+                $existingContent = File::get($routesPath);
+                
+                // Check if MCP routes already exist
+                if (str_contains($existingContent, 'RestifyServer') || str_contains($existingContent, 'mcp.restify')) {
+                    return [
+                        'success' => true,
+                        'step' => 'MCP Setup',
+                        'message' => 'MCP routes already configured in routes/ai.php',
+                    ];
+                }
+                
+                // Append to existing file
+                $mcpRoutes = $this->getMcpRoutesContent();
+                File::append($routesPath, "\n\n" . $mcpRoutes);
+                
+                return [
+                    'success' => true,
+                    'step' => 'MCP Setup',
+                    'message' => 'MCP routes added to existing routes/ai.php file',
+                ];
+            }
+            
+            // Create new routes/ai.php file
+            $fullRoutesContent = $this->getFullMcpRoutesFile();
+            File::put($routesPath, $fullRoutesContent);
+            
+            return [
+                'success' => true,
+                'step' => 'MCP Setup',
+                'message' => 'Created routes/ai.php with MCP server configuration',
+            ];
+            
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'step' => 'MCP Setup',
+                'message' => 'Failed to setup MCP routes: ' . $e->getMessage(),
+            ];
+        }
+    }
+
+    protected function getMcpRoutesContent(): string
+    {
+        return '// Laravel Restify MCP Server Routes
+use Binaryk\LaravelRestify\MCP\RestifyServer;
+use Laravel\Mcp\Facades\Mcp;
+
+// Web-based MCP server with authentication
+Mcp::web(\'restify\', RestifyServer::class)
+    ->middleware([\'auth:sanctum\'])
+    ->name(\'mcp.restify\');';
+    }
+
+    protected function getFullMcpRoutesFile(): string
+    {
+        return '<?php
+
+use Binaryk\LaravelRestify\MCP\RestifyServer;
+use Laravel\Mcp\Facades\Mcp;
+
+/*
+|--------------------------------------------------------------------------
+| AI Routes
+|--------------------------------------------------------------------------
+|
+| Here you can register AI-related routes for your application, including
+| MCP (Model Context Protocol) servers and other AI integrations.
+|
+*/
+
+// Web-based MCP server with authentication
+Mcp::web(\'restify\', RestifyServer::class)
+    ->middleware([\'auth:sanctum\'])
+    ->name(\'mcp.restify\');
+';
+    }
+
     protected function generateSuccessResponse(array $results, array $arguments): ToolResult
     {
         $response = "# Laravel Restify Installation Complete! 🎉\n\n";
@@ -609,6 +702,10 @@ class InstallRestifyTool extends Tool
             $response .= "✅ **Config File:** Updated with latest Laravel Restify 10.x configuration\n";
         }
 
+        if ($arguments['setup_mcp'] ?? false) {
+            $response .= "✅ **MCP Server:** AI integration routes configured in routes/ai.php\n";
+        }
+
         // What was created
         $response .= "\n## Files Created/Updated\n\n";
         $response .= "- `config/restify.php` - Latest configuration file (v10.x)\n";
@@ -620,6 +717,10 @@ class InstallRestifyTool extends Tool
         
         if ($arguments['update_config'] ?? true) {
             $response .= "- `config/restify.php.backup-*` - Backup of previous config (if existed)\n";
+        }
+        
+        if ($arguments['setup_mcp'] ?? false) {
+            $response .= "- `routes/ai.php` - MCP server routes for AI integration\n";
         }
 
         // API endpoints
@@ -634,6 +735,16 @@ class InstallRestifyTool extends Tool
         $response .= "DELETE {$apiPrefix}/users/{id}     # Delete user\n";
         $response .= "```\n";
 
+        // MCP endpoints if enabled
+        if ($arguments['setup_mcp'] ?? false) {
+            $response .= "\n## MCP Server Endpoints\n\n";
+            $response .= "Your MCP (Model Context Protocol) server is available at:\n\n";
+            $response .= "```\n";
+            $response .= "POST   /mcp/restify                 # MCP server endpoint\n";
+            $response .= "```\n";
+            $response .= "\n**Authentication:** Requires Sanctum token via `auth:sanctum` middleware\n";
+        }
+
         // Next steps
         $response .= "\n## Next Steps\n\n";
         $response .= "1. **Test the API:** Make a GET request to `{$apiPrefix}/users`\n";
@@ -646,6 +757,11 @@ class InstallRestifyTool extends Tool
             $response .= "6. **Configure Sanctum:** Ensure Laravel Sanctum is properly set up\n";
         }
 
+        if ($arguments['setup_mcp'] ?? false) {
+            $nextStepNumber = ($arguments['enable_sanctum_auth'] ?? false) ? "7" : "6";
+            $response .= "{$nextStepNumber}. **Test MCP Server:** Connect your AI client to `/mcp/restify` endpoint\n";
+        }
+
         // Authentication note
         if ($arguments['enable_sanctum_auth'] ?? false) {
             $response .= "\n## Authentication Note\n\n";
@@ -653,6 +769,16 @@ class InstallRestifyTool extends Tool
             $response .= "- Laravel Sanctum is installed: `composer require laravel/sanctum`\n";
             $response .= "- Sanctum is published: `php artisan vendor:publish --provider=\"Laravel\\Sanctum\\SanctumServiceProvider\"`\n";
             $response .= "- API tokens are configured for your users\n";
+        }
+
+        // MCP note
+        if ($arguments['setup_mcp'] ?? false) {
+            $response .= "\n## MCP Server Note\n\n";
+            $response .= "🤖 **MCP server is configured.** To use it:\n";
+            $response .= "- The MCP server is protected by Sanctum authentication\n";
+            $response .= "- AI clients need valid API tokens to access the server\n";
+            $response .= "- The server provides AI tools for repository management, debugging, and more\n";
+            $response .= "- Configure your AI client to connect to `/mcp/restify`\n";
         }
 
         // Additional commands

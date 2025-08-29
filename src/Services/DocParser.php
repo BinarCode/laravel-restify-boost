@@ -147,7 +147,7 @@ class DocParser
 
     protected function extractSummary(string $content): string
     {
-        $summaryLength = config('restify-mcp.docs.processing.summary_length', 300);
+        $summaryLength = config('restify-boost.docs.processing.summary_length', 300);
 
         $sentences = preg_split('/[.!?]+/', $content, -1, PREG_SPLIT_NO_EMPTY);
         $summary = '';
@@ -167,7 +167,7 @@ class DocParser
 
     protected function determineCategory(string $filePath): string
     {
-        $categories = config('restify-mcp.categories', []);
+        $categories = config('restify-boost.categories', []);
 
         foreach ($categories as $categoryKey => $categoryConfig) {
             $paths = $categoryConfig['paths'] ?? [];

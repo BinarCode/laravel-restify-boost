@@ -19,10 +19,10 @@ class DocCache
 
     public function __construct()
     {
-        $this->cache = Cache::store(config('restify-mcp.cache.store'));
-        $this->keyPrefix = config('restify-mcp.cache.key_prefix', 'restify_mcp');
-        $this->ttl = config('restify-mcp.cache.ttl', 3600);
-        $this->enabled = config('restify-mcp.cache.enabled', true);
+        $this->cache = Cache::store(config('restify-boost.cache.store'));
+        $this->keyPrefix = config('restify-boost.cache.key_prefix', 'restify_mcp');
+        $this->ttl = config('restify-boost.cache.ttl', 3600);
+        $this->enabled = config('restify-boost.cache.enabled', true);
     }
 
     public function remember(string $key, callable $callback): mixed

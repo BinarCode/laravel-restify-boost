@@ -76,8 +76,8 @@ class RestifyTroubleshooting extends Prompt
     protected function getDocumentationPaths(): array
     {
         $paths = [];
-        $docsPath = config('restify-mcp.docs.paths.primary');
-        $legacyPath = config('restify-mcp.docs.paths.legacy');
+        $docsPath = config('restify-boost.docs.paths.primary');
+        $legacyPath = config('restify-boost.docs.paths.legacy');
 
         foreach ([$docsPath, $legacyPath] as $basePath) {
             if (is_dir($basePath)) {

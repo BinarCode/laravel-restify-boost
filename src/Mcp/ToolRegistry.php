@@ -20,7 +20,7 @@ class ToolRegistry
     public static function initialize(): void
     {
         self::$allowedTools = self::discoverTools();
-        self::$excludedTools = config('restify-mcp.mcp.tools.exclude', []);
+        self::$excludedTools = config('restify-boost.mcp.tools.exclude', []);
     }
 
     /**
@@ -76,7 +76,7 @@ class ToolRegistry
         }
 
         // Add any additional tools from config
-        $additionalTools = config('restify-mcp.mcp.tools.include', []);
+        $additionalTools = config('restify-boost.mcp.tools.include', []);
         $tools = array_merge($tools, $additionalTools);
 
         return array_unique($tools);

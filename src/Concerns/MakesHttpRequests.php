@@ -17,7 +17,7 @@ trait MakesHttpRequests
         ]);
 
         // Disable SSL verification for local development URLs and testing
-        if (app()->environment(['local', 'testing']) || str_contains(config('restify-mcp.hosted.api_url', ''), '.test')) {
+        if (app()->environment(['local', 'testing']) || str_contains(config('restify-boost.hosted.api_url', ''), '.test')) {
             $client = $client->withoutVerifying();
         }
 

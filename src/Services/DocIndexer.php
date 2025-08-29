@@ -202,7 +202,7 @@ class DocIndexer
         $terms = array_filter(preg_split('/\s+/', $text));
 
         // Remove very short terms
-        $terms = array_filter($terms, fn ($term) => strlen($term) >= config('restify-mcp.search.min_query_length', 2));
+        $terms = array_filter($terms, fn ($term) => strlen($term) >= config('restify-boost.search.min_query_length', 2));
 
         return array_unique($terms);
     }
@@ -210,7 +210,7 @@ class DocIndexer
     protected function calculateRelevanceScore(array $doc, array $queryTerms): float
     {
         $score = 0;
-        $boostScores = config('restify-mcp.search.boost_scores', [
+        $boostScores = config('restify-boost.search.boost_scores', [
             'title' => 3.0,
             'heading' => 2.0,
             'content' => 1.0,
@@ -332,7 +332,7 @@ class DocIndexer
 
     protected function getCategoryName(string $category): string
     {
-        $categories = config('restify-mcp.categories', []);
+        $categories = config('restify-boost.categories', []);
 
         return $categories[$category]['name'] ?? ucfirst(str_replace(['-', '_'], ' ', $category));
     }

@@ -70,7 +70,7 @@ class NavigateDocs extends Tool
     protected function getDocumentationPaths(): array
     {
         $paths = [];
-        $docsPath = config('restify-mcp.docs.paths.primary');
+        $docsPath = config('restify-boost.docs.paths.primary');
 
         foreach ([$docsPath] as $basePath) {
             if (is_dir($basePath)) {
@@ -257,7 +257,7 @@ class NavigateDocs extends Tool
 
     protected function getCategoryName(string $category): string
     {
-        $categories = config('restify-mcp.categories', []);
+        $categories = config('restify-boost.categories', []);
 
         return $categories[$category]['name'] ?? ucfirst(str_replace(['-', '_'], ' ', $category));
     }

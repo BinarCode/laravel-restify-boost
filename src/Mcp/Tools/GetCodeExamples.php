@@ -91,7 +91,7 @@ class GetCodeExamples extends Tool
     protected function getDocumentationPaths(): array
     {
         $paths = [];
-        $docsPath = config('restify-mcp.docs.paths.primary');
+        $docsPath = config('restify-boost.docs.paths.primary');
 
         foreach ([$docsPath] as $basePath) {
             if (is_dir($basePath)) {
