@@ -261,7 +261,7 @@ class InstallRestifyTool extends Tool
             // Backup existing config if it exists
             if (File::exists($configPath)) {
                 $existingConfig = File::get($configPath);
-                $backupPath = $configPath . '.backup-' . date('Y-m-d-H-i-s');
+                $backupPath = $configPath.'.backup-'.date('Y-m-d-H-i-s');
                 File::copy($configPath, $backupPath);
                 $backupCreated = true;
             }
@@ -269,11 +269,11 @@ class InstallRestifyTool extends Tool
             // Download latest config file
             $response = Http::timeout(30)->get(self::LATEST_CONFIG_URL);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 return [
                     'success' => false,
                     'step' => 'Config Update',
-                    'message' => 'Failed to download latest config file: HTTP ' . $response->status(),
+                    'message' => 'Failed to download latest config file: HTTP '.$response->status(),
                 ];
             }
 
@@ -284,7 +284,7 @@ class InstallRestifyTool extends Tool
                 $mergedConfig = $this->mergeConfigFiles($existingConfig, $latestConfig);
                 File::put($configPath, $mergedConfig);
 
-                $message = $backupCreated 
+                $message = $backupCreated
                     ? 'Updated config file with latest version (backup created)'
                     : 'Updated config file with latest version';
             } else {
@@ -304,7 +304,7 @@ class InstallRestifyTool extends Tool
             return [
                 'success' => false,
                 'step' => 'Config Update',
-                'message' => 'Failed to update config file: ' . $e->getMessage(),
+                'message' => 'Failed to update config file: '.$e->getMessage(),
             ];
         }
     }
@@ -320,10 +320,10 @@ class InstallRestifyTool extends Tool
         try {
             // Extract custom values from existing config
             $customValues = $this->extractCustomValues($existing);
-            
+
             // Start with the latest config
             $mergedConfig = $latest;
-            
+
             // Apply custom values to the latest config
             foreach ($customValues as $key => $value) {
                 $mergedConfig = $this->replaceConfigValue($mergedConfig, $key, $value);
@@ -383,6 +383,7 @@ class InstallRestifyTool extends Tool
             case 'auth':
             case 'cache':
                 $pattern = "/'$key'\s*=>\s*\[[^\]]*\]/s";
+
                 return preg_replace($pattern, $value, $config);
             default:
                 return $config;
@@ -714,7 +715,7 @@ Mcp::web(\'restify\', RestifyServer::class)
         $response .= "- `app/Restify/Repository.php` - Base repository class\n";
         $response .= "- `app/Restify/UserRepository.php` - User repository example\n";
         $response .= "- Database migration for action logs\n";
-        
+
         if ($arguments['update_config'] ?? true) {
             $response .= "- `config/restify.php.backup-*` - Backup of previous config (if existed)\n";
         }
