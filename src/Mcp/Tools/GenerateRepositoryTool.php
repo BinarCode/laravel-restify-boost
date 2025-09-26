@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace BinarCode\RestifyBoost\Mcp\Tools;
 
-use Generator;
+use Illuminate\JsonSchema\JsonSchema;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use Laravel\Mcp\Request;
+use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Tool;
-use Laravel\Mcp\Server\Tools\ToolInputSchema;
-use Laravel\Mcp\Server\Tools\ToolResult;
 use ReflectionClass;
 use Symfony\Component\Finder\Finder;
 
@@ -18,52 +18,60 @@ class GenerateRepositoryTool extends Tool
 {
     protected ?string $confirmedModelClass = null;
 
-    public function description(): string
+    /**
+     * The tool's description.
+     */
+    protected string $description = 'Generate a Laravel Restify repository class based on an existing Eloquent model. This tool analyzes the model\'s database schema, detects relationships, generates appropriate fields, and follows existing repository organization patterns in your project. It can auto-detect foreign keys, generate proper field types, and create relationship methods.';
+
+    /**
+     * Get the tool's input schema.
+     *
+     * @return array<string, JsonSchema>
+     */
+    public function schema(JsonSchema $schema): array
     {
-        return 'Generate a Laravel Restify repository class based on an existing Eloquent model. This tool analyzes the model\'s database schema, detects relationships, generates appropriate fields, and follows existing repository organization patterns in your project. It can auto-detect foreign keys, generate proper field types, and create relationship methods.';
+        return [
+            'model_name' => $schema->string()
+                ->description('Name of the Eloquent model to generate repository for (e.g., "User", "BlogPost")'),
+            'include_fields' => $schema->boolean()
+                ->description('Generate fields from model database schema')
+                ->optional(),
+            'include_relationships' => $schema->boolean()
+                ->description('Generate relationships (BelongsTo/HasMany) from schema analysis')
+                ->optional(),
+            'repository_name' => $schema->string()
+                ->description('Override default repository name (default: {Model}Repository)')
+                ->optional(),
+            'namespace' => $schema->string()
+                ->description('Override default namespace (auto-detected from existing repositories)')
+                ->optional(),
+            'force' => $schema->boolean()
+                ->description('Overwrite existing repository file if it exists')
+                ->optional(),
+        ];
     }
 
-    public function schema(ToolInputSchema $schema): ToolInputSchema
-    {
-        return $schema
-            ->string('model_name')
-            ->description('Name of the Eloquent model to generate repository for (e.g., "User", "BlogPost")')
-            ->required()
-            ->boolean('include_fields')
-            ->description('Generate fields from model database schema')
-            ->optional()
-            ->boolean('include_relationships')
-            ->description('Generate relationships (BelongsTo/HasMany) from schema analysis')
-            ->optional()
-            ->string('repository_name')
-            ->description('Override default repository name (default: {Model}Repository)')
-            ->optional()
-            ->string('namespace')
-            ->description('Override default namespace (auto-detected from existing repositories)')
-            ->optional()
-            ->boolean('force')
-            ->description('Overwrite existing repository file if it exists')
-            ->optional();
-    }
-
-    public function handle(array $arguments): ToolResult|Generator
+    /**
+     * Handle the tool request.
+     */
+    public function handle(Request $request): Response
     {
         try {
-            $modelName = trim($arguments['model_name']);
-            $includeFields = $arguments['include_fields'] ?? true;
-            $includeRelationships = $arguments['include_relationships'] ?? true;
-            $customRepositoryName = $arguments['repository_name'] ?? null;
-            $customNamespace = $arguments['namespace'] ?? null;
-            $force = $arguments['force'] ?? false;
+            $modelName = trim($request->get('model_name'));
+            $includeFields = $request->get('include_fields', true);
+            $includeRelationships = $request->get('include_relationships', true);
+            $customRepositoryName = $request->get('repository_name');
+            $customNamespace = $request->get('namespace');
+            $force = $request->get('force', false);
 
             if (empty($modelName)) {
-                return ToolResult::error('Model name is required');
+                return Response::error('Model name is required');
             }
 
             // Step 1: Find and resolve the model
             $modelClass = $this->resolveModelClass($modelName);
             if (! $modelClass) {
-                return ToolResult::error("Could not find model: {$modelName}");
+                return Response::error("Could not find model: {$modelName}");
             }
 
             // Step 2: Analyze existing repository patterns
@@ -79,7 +87,7 @@ class GenerateRepositoryTool extends Tool
 
             // Step 4: Check if repository already exists
             if (! $force && File::exists($repositoryDetails['file_path'])) {
-                return ToolResult::error(
+                return Response::error(
                     "Repository already exists at: {$repositoryDetails['file_path']}\n".
                     "Use 'force: true' to overwrite."
                 );
@@ -100,7 +108,7 @@ class GenerateRepositoryTool extends Tool
             return $this->generateSuccessResponse($modelClass, $repositoryDetails, $repositoryContent);
 
         } catch (\Throwable $e) {
-            return ToolResult::error('Repository generation failed: '.$e->getMessage());
+            return Response::error('Repository generation failed: '.$e->getMessage());
         }
     }
 
@@ -658,7 +666,7 @@ class {$content['repository_name']} extends Repository
         $response .= "- **Factory:** `php artisan make:factory {$repositoryDetails['model_base_name']}Factory`\n";
         $response .= '- **Migration:** `php artisan make:migration create_'.Str::snake(Str::plural($repositoryDetails['model_base_name']))."_table`\n";
 
-        return ToolResult::text($response);
+        return Response::text($response);
     }
 
     protected function getRootNamespace(): string

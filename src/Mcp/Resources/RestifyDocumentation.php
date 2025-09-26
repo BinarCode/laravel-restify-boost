@@ -5,19 +5,33 @@ declare(strict_types=1);
 namespace BinarCode\RestifyBoost\Mcp\Resources;
 
 use BinarCode\RestifyBoost\Services\DocParser;
-use Laravel\Mcp\Server\Contracts\Resources\Content;
+use Laravel\Mcp\Request;
+use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Resource;
 
 class RestifyDocumentation extends Resource
 {
     public function __construct(protected DocParser $parser) {}
 
-    public function description(): string
-    {
-        return 'Complete Laravel Restify documentation including installation guides, repositories, fields, filters, authentication, actions, and performance optimization. This resource provides structured access to all documentation content for comprehensive understanding of the framework.';
-    }
+    /**
+     * The resource's description.
+     */
+    protected string $description = 'Complete Laravel Restify documentation including installation guides, repositories, fields, filters, authentication, actions, and performance optimization. This resource provides structured access to all documentation content for comprehensive understanding of the framework.';
 
-    public function read(): string|Content
+    /**
+     * The resource's URI.
+     */
+    protected string $uri = 'file://restify-documentation.json';
+
+    /**
+     * The resource's MIME type.
+     */
+    protected string $mimeType = 'application/json';
+
+    /**
+     * Handle the resource request.
+     */
+    public function handle(): Response
     {
         try {
             $documentation = $this->loadDocumentation();
@@ -31,9 +45,9 @@ class RestifyDocumentation extends Resource
                 'last_updated' => now()->toIso8601String(),
             ];
 
-            return json_encode($response, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+            return Response::json($response);
         } catch (\Throwable $e) {
-            return "Error loading Laravel Restify documentation: {$e->getMessage()}";
+            return Response::error("Error loading Laravel Restify documentation: {$e->getMessage()}");
         }
     }
 

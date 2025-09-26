@@ -5,19 +5,33 @@ declare(strict_types=1);
 namespace BinarCode\RestifyBoost\Mcp\Resources;
 
 use BinarCode\RestifyBoost\Services\DocParser;
-use Laravel\Mcp\Server\Contracts\Resources\Content;
+use Laravel\Mcp\Request;
+use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Resource;
 
 class RestifyApiReference extends Resource
 {
     public function __construct(protected DocParser $parser) {}
 
-    public function description(): string
-    {
-        return 'Complete Laravel Restify API reference with detailed method signatures, field types, relationship patterns, and implementation examples. Includes repositories, fields, relations, actions, filters, authentication, and MCP-specific features.';
-    }
+    /**
+     * The resource's description.
+     */
+    protected string $description = 'Complete Laravel Restify API reference with detailed method signatures, field types, relationship patterns, and implementation examples. Includes repositories, fields, relations, actions, filters, authentication, and MCP-specific features.';
 
-    public function read(): string|Content
+    /**
+     * The resource's URI.
+     */
+    protected string $uri = 'file://restify-api-reference.json';
+
+    /**
+     * The resource's MIME type.
+     */
+    protected string $mimeType = 'application/json';
+
+    /**
+     * Handle the resource request.
+     */
+    public function handle(): Response
     {
         try {
             $apiReference = $this->buildApiReference();
@@ -31,9 +45,9 @@ class RestifyApiReference extends Resource
                 'generated_at' => now()->toIso8601String(),
             ];
 
-            return json_encode($response, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+            return Response::json($response);
         } catch (\Throwable $e) {
-            return "Error generating Laravel Restify API reference: {$e->getMessage()}";
+            return Response::error("Error generating Laravel Restify API reference: {$e->getMessage()}");
         }
     }
 

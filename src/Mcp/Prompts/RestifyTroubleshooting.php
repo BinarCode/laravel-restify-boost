@@ -5,54 +5,75 @@ declare(strict_types=1);
 namespace BinarCode\RestifyBoost\Mcp\Prompts;
 
 use BinarCode\RestifyBoost\Services\DocIndexer;
+use Laravel\Mcp\Request;
+use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Prompt;
-use Laravel\Mcp\Server\Prompts\PromptInputSchema;
-use Laravel\Mcp\Server\Prompts\PromptResult;
 
 class RestifyTroubleshooting extends Prompt
 {
     public function __construct(protected DocIndexer $indexer) {}
 
-    public function name(): string
-    {
-        return 'restify-troubleshooting';
-    }
+    /**
+     * The prompt's name.
+     */
+    protected string $name = 'restify-troubleshooting';
 
-    public function description(): string
-    {
-        return 'Get help troubleshooting Laravel Restify issues. Provide error messages, describe problems, or ask about common issues to receive targeted solutions and debugging guidance. This prompt helps diagnose and resolve configuration, runtime, and implementation problems.';
-    }
+    /**
+     * The prompt's title.
+     */
+    protected string $title = 'Laravel Restify Troubleshooting Guide';
 
-    public function schema(PromptInputSchema $schema): PromptInputSchema
+    /**
+     * Get the prompt's arguments.
+     *
+     * @return array<int, \Laravel\Mcp\Server\Prompts\Argument>
+     */
+    public function arguments(): array
     {
-        return $schema
-            ->string('issue')
-            ->description('Describe the problem you\'re experiencing or paste the error message')
-            ->required()
-            ->string('context')
-            ->description('Additional context: what you were trying to do, recent changes, environment details, etc.')
-            ->optional()
-            ->string('error_type')
-            ->description('Type of issue: "error", "performance", "configuration", "unexpected_behavior", or "other"')
-            ->optional()
-            ->string('code_snippet')
-            ->description('Relevant code snippet where the issue occurs')
-            ->optional();
+        return [
+            new \Laravel\Mcp\Server\Prompts\Argument(
+                name: 'issue',
+                description: 'Describe the problem you\'re experiencing or paste the error message',
+                required: true
+            ),
+            new \Laravel\Mcp\Server\Prompts\Argument(
+                name: 'context',
+                description: 'Additional context: what you were trying to do, recent changes, environment details, etc.',
+                required: false
+            ),
+            new \Laravel\Mcp\Server\Prompts\Argument(
+                name: 'error_type',
+                description: 'Type of issue: "error", "performance", "configuration", "unexpected_behavior", or "other"',
+                required: false
+            ),
+            new \Laravel\Mcp\Server\Prompts\Argument(
+                name: 'code_snippet',
+                description: 'Relevant code snippet where the issue occurs',
+                required: false
+            ),
+        ];
     }
 
     /**
-     * @param  array<string, mixed>  $arguments
+     * Handle the prompt request.
      */
-    public function handle(array $arguments): PromptResult
+    public function handle(Request $request): Response
     {
         try {
-            $issue = trim($arguments['issue']);
-            $context = $arguments['context'] ?? '';
-            $errorType = strtolower($arguments['error_type'] ?? 'other');
-            $codeSnippet = $arguments['code_snippet'] ?? '';
+            $validated = $request->validate([
+                'issue' => 'required|string|max:1000',
+                'context' => 'nullable|string|max:1000',
+                'error_type' => 'nullable|string|in:error,performance,configuration,unexpected_behavior,other',
+                'code_snippet' => 'nullable|string|max:2000',
+            ]);
+
+            $issue = trim($validated['issue']);
+            $context = $validated['context'] ?? '';
+            $errorType = strtolower($validated['error_type'] ?? 'other');
+            $codeSnippet = $validated['code_snippet'] ?? '';
 
             if (empty($issue)) {
-                return PromptResult::text('Please describe the issue you\'re experiencing with Laravel Restify.');
+                return Response::text('Please describe the issue you\'re experiencing with Laravel Restify.');
             }
 
             // Initialize indexer
@@ -61,9 +82,9 @@ class RestifyTroubleshooting extends Prompt
             // Analyze the issue and generate troubleshooting guidance
             $troubleshootingGuide = $this->generateTroubleshootingGuide($issue, $context, $errorType, $codeSnippet);
 
-            return PromptResult::text($troubleshootingGuide);
+            return Response::text($troubleshootingGuide);
         } catch (\Throwable $e) {
-            return PromptResult::text("I encountered an error while generating troubleshooting guidance: {$e->getMessage()}");
+            return Response::text("I encountered an error while generating troubleshooting guidance: {$e->getMessage()}");
         }
     }
 

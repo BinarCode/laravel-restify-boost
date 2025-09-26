@@ -5,55 +5,60 @@ declare(strict_types=1);
 namespace BinarCode\RestifyBoost\Mcp\Tools;
 
 use BinarCode\RestifyBoost\Services\DocIndexer;
-use Generator;
+use Illuminate\JsonSchema\JsonSchema;
+use Laravel\Mcp\Request;
+use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Tool;
-use Laravel\Mcp\Server\Tools\ToolInputSchema;
-use Laravel\Mcp\Server\Tools\ToolResult;
 
 class GetCodeExamples extends Tool
 {
     public function __construct(protected DocIndexer $indexer) {}
 
-    public function description(): string
-    {
-        return 'Get specific code examples from Laravel Restify documentation. This tool extracts and formats code examples for specific features like repositories, fields, filters, actions, and authentication. Perfect for understanding implementation patterns and getting copy-paste ready code snippets.';
-    }
+    /**
+     * The tool's description.
+     */
+    protected string $description = 'Get specific code examples from Laravel Restify documentation. This tool extracts and formats code examples for specific features like repositories, fields, filters, actions, and authentication. Perfect for understanding implementation patterns and getting copy-paste ready code snippets.';
 
-    public function schema(ToolInputSchema $schema): ToolInputSchema
+    /**
+     * Get the tool's input schema.
+     *
+     * @return array<string, JsonSchema>
+     */
+    public function schema(JsonSchema $schema): array
     {
-        return $schema
-            ->string('topic')
-            ->description('The topic or feature you need code examples for (e.g., "repository", "field validation", "custom filter", "authentication")')
-            ->required()
-            ->string('language')
-            ->description('Filter by programming language (php, javascript, json, yaml, etc.)')
-            ->optional()
-            ->string('category')
-            ->description('Limit to specific documentation category: installation, repositories, fields, filters, auth, actions, performance, testing')
-            ->optional()
-            ->integer('limit')
-            ->description('Maximum number of examples to return (default: 10, max: 25)')
-            ->optional()
-            ->boolean('include_context')
-            ->description('Include surrounding documentation context for each example (default: true)')
-            ->optional();
+        return [
+            'topic' => $schema->string()
+                ->description('The topic or feature you need code examples for (e.g., "repository", "field validation", "custom filter", "authentication")'),
+            'language' => $schema->string()
+                ->description('Filter by programming language (php, javascript, json, yaml, etc.)')
+                ->optional(),
+            'category' => $schema->string()
+                ->description('Limit to specific documentation category: installation, repositories, fields, filters, auth, actions, performance, testing')
+                ->optional(),
+            'limit' => $schema->integer()
+                ->description('Maximum number of examples to return (default: 10, max: 25)')
+                ->optional(),
+            'include_context' => $schema->boolean()
+                ->description('Include surrounding documentation context for each example (default: true)')
+                ->optional(),
+        ];
     }
 
     /**
-     * @param  array<string, mixed>  $arguments
+     * Handle the tool request.
      */
-    public function handle(array $arguments): ToolResult|Generator
+    public function handle(Request $request): Response
     {
         try {
-            $topic = trim($arguments['topic']);
+            $topic = trim($request->get('topic'));
             if (empty($topic)) {
-                return ToolResult::error('Topic is required');
+                return Response::error('Topic is required');
             }
 
-            $language = $arguments['language'] ?? null;
-            $category = $arguments['category'] ?? null;
-            $limit = min($arguments['limit'] ?? 10, 25);
-            $includeContext = $arguments['include_context'] ?? true;
+            $language = $request->get('language');
+            $category = $request->get('category');
+            $limit = min($request->get('limit', 10), 25);
+            $includeContext = $request->get('include_context', true);
 
             // Initialize indexer
             $this->initializeIndexer();
@@ -76,9 +81,9 @@ class GetCodeExamples extends Tool
             $limitedExamples = array_slice($codeExamples, 0, $limit);
             $response = $this->formatCodeExamples($limitedExamples, $topic, $includeContext);
 
-            return ToolResult::text($response);
+            return Response::text($response);
         } catch (\Throwable $e) {
-            return ToolResult::error('Failed to get code examples: '.$e->getMessage());
+            return Response::error('Failed to get code examples: '.$e->getMessage());
         }
     }
 
@@ -243,7 +248,7 @@ class GetCodeExamples extends Tool
         return $output;
     }
 
-    protected function handleNoExamples(string $topic, ?string $category): ToolResult
+    protected function handleNoExamples(string $topic, ?string $category): Response
     {
         $message = "No documentation found for topic: **{$topic}**";
         if ($category) {
@@ -255,10 +260,10 @@ class GetCodeExamples extends Tool
         $message .= "- Check available categories with the search tool\n";
         $message .= "- Use `search-restify-docs` to explore available documentation\n";
 
-        return ToolResult::text($message);
+        return Response::text($message);
     }
 
-    protected function handleNoCodeExamples(string $topic, ?string $language): ToolResult
+    protected function handleNoCodeExamples(string $topic, ?string $language): Response
     {
         $message = "No code examples found for topic: **{$topic}**";
         if ($language) {
@@ -270,6 +275,6 @@ class GetCodeExamples extends Tool
         $message .= "- Check if documentation uses different terminology\n";
         $message .= "- Use `search-restify-docs` to find conceptual information\n";
 
-        return ToolResult::text($message);
+        return Response::text($message);
     }
 }

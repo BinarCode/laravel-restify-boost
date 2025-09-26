@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace BinarCode\RestifyBoost\Mcp\Tools;
 
-use Generator;
+use Illuminate\JsonSchema\JsonSchema;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
+use Laravel\Mcp\Request;
+use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Tool;
-use Laravel\Mcp\Server\Tools\ToolInputSchema;
-use Laravel\Mcp\Server\Tools\ToolResult;
 use Symfony\Component\Finder\Finder;
 use Throwable;
 
@@ -24,34 +24,30 @@ class DebugApplicationTool extends Tool
         return 'Comprehensive debugging tool for Laravel Restify applications. Performs health checks on Laravel installation, database connectivity, Restify configuration, repository validation, performance analysis, and common issue detection. Provides detailed diagnostic reports with actionable suggestions and optional automatic fixes.';
     }
 
-    public function schema(ToolInputSchema $schema): ToolInputSchema
+    public function schema(JsonSchema $schema): array
     {
-        return $schema
-            ->string('check_type')
-            ->description('Specific check to run: "all", "config", "database", "restify", "performance", "health" (default: all)')
-            ->optional()
-            ->boolean('detailed_output')
-            ->description('Include detailed diagnostic information and stack traces (default: true)')
-            ->optional()
-            ->boolean('fix_issues')
-            ->description('Attempt to automatically fix common issues found (default: false)')
-            ->optional()
-            ->boolean('export_report')
-            ->description('Export diagnostic report to storage/logs/debug-report.md (default: false)')
-            ->optional()
-            ->boolean('include_suggestions')
-            ->description('Include detailed fix suggestions in output (default: true)')
-            ->optional();
+        return [
+            'check_type' => $schema->string()
+                ->description('Specific check to run: "all", "config", "database", "restify", "performance", "health" (default: all)'),
+            'detailed_output' => $schema->boolean()
+                ->description('Include detailed diagnostic information and stack traces (default: true)'),
+            'fix_issues' => $schema->boolean()
+                ->description('Attempt to automatically fix common issues found (default: false)'),
+            'export_report' => $schema->boolean()
+                ->description('Export diagnostic report to storage/logs/debug-report.md (default: false)'),
+            'include_suggestions' => $schema->boolean()
+                ->description('Include detailed fix suggestions in output (default: true)'),
+        ];
     }
 
-    public function handle(array $arguments): ToolResult|Generator
+    public function handle(Request $request): Response
     {
         try {
-            $checkType = $arguments['check_type'] ?? 'all';
-            $detailedOutput = $arguments['detailed_output'] ?? true;
-            $fixIssues = $arguments['fix_issues'] ?? false;
-            $exportReport = $arguments['export_report'] ?? false;
-            $includeSuggestions = $arguments['include_suggestions'] ?? true;
+            $checkType = $request->get('check_type') ?? 'all';
+            $detailedOutput = $request->get('detailed_output') ?? true;
+            $fixIssues = $request->get('fix_issues') ?? false;
+            $exportReport = $request->get('export_report') ?? false;
+            $includeSuggestions = $request->get('include_suggestions') ?? true;
 
             $report = [
                 'summary' => [],
@@ -107,7 +103,7 @@ class DebugApplicationTool extends Tool
             return $this->generateDebugReport($report, $detailedOutput);
 
         } catch (Throwable $e) {
-            return ToolResult::error('Debug analysis failed: '.$e->getMessage());
+            return Response::error('Debug analysis failed: '.$e->getMessage());
         }
     }
 
@@ -665,7 +661,7 @@ class DebugApplicationTool extends Tool
         return $content;
     }
 
-    protected function generateDebugReport(array $report, bool $detailed): ToolResult
+    protected function generateDebugReport(array $report, bool $detailed): Response
     {
         $response = "# Laravel Restify Debug Report\n\n";
 
@@ -788,7 +784,7 @@ class DebugApplicationTool extends Tool
         $response .= "2. **Run with fix_issues=true** to automatically fix common problems\n";
         $response .= "3. **Export detailed report** with export_report=true for documentation\n";
 
-        return ToolResult::text($response);
+        return Response::text($response);
     }
 
     protected function getStatusEmoji(string $status): string
