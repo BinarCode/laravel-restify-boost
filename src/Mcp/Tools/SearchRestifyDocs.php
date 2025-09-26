@@ -5,75 +5,77 @@ declare(strict_types=1);
 namespace BinarCode\RestifyBoost\Mcp\Tools;
 
 use BinarCode\RestifyBoost\Services\DocIndexer;
-use Generator;
+use Illuminate\JsonSchema\JsonSchema;
+use Laravel\Mcp\Request;
+use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Tool;
-use Laravel\Mcp\Server\Tools\ToolInputSchema;
-use Laravel\Mcp\Server\Tools\ToolResult;
 
 class SearchRestifyDocs extends Tool
 {
     public function __construct(protected DocIndexer $indexer) {}
 
-    public function description(): string
-    {
-        return 'Search Laravel Restify documentation for specific topics, methods, concepts, or questions. This tool automatically handles questions like "how many types of filters", "what are the available field types", "how to create repositories", etc. It searches through comprehensive documentation including installation, repositories, fields, filters, authentication, actions, and performance guides.'.PHP_EOL.
-               'IMPORTANT: Always use this tool first when users ask any questions about Laravel Restify concepts, features, usage, or implementation. This includes questions about:'.PHP_EOL.
-               '- Types of filters, fields, actions, or other components ("how many types of X")'.PHP_EOL.
-               '- Available options or methods ("what are the available Y")'.PHP_EOL.
-               '- How to implement features ("how to create Z")'.PHP_EOL.
-               '- Best practices and examples'.PHP_EOL.
-               'Use multiple queries if unsure about terminology (e.g., ["validation", "validate"], ["filter types", "filtering options"]).';
-    }
+    /**
+     * The tool's description.
+     */
+    protected string $description = 'Search Laravel Restify documentation for specific topics, methods, concepts, or questions. This tool automatically handles questions like "how many types of filters", "what are the available field types", "how to create repositories", etc. It searches through comprehensive documentation including installation, repositories, fields, filters, authentication, actions, and performance guides.
 
-    public function schema(ToolInputSchema $schema): ToolInputSchema
+IMPORTANT: Always use this tool first when users ask any questions about Laravel Restify concepts, features, usage, or implementation. This includes questions about:
+- Types of filters, fields, actions, or other components ("how many types of X")
+- Available options or methods ("what are the available Y")
+- How to implement features ("how to create Z")
+- Best practices and examples
+Use multiple queries if unsure about terminology (e.g., ["validation", "validate"], ["filter types", "filtering options"]).';
+
+    /**
+     * Get the tool's input schema.
+     *
+     * @return array<string, JsonSchema>
+     */
+    public function schema(JsonSchema $schema): array
     {
-        return $schema
-            ->raw('queries', [
-                'description' => 'List of search queries to perform. For questions like "how many types of filters", use ["filter types", "filtering", "match filters"]. For "available field types", use ["field types", "fields", "field methods"]. Pass multiple queries if you aren\'t sure about exact terminology.',
-                'type' => 'array',
-                'items' => [
-                    'type' => 'string',
-                    'description' => 'Search query string - extract key terms from user questions',
-                ],
-                'minItems' => 1,
-            ])->required()
-            ->string('question_type')
-            ->description('Type of question being asked: "count" (how many types), "list" (what are available), "howto" (how to do something), "concept" (explain concept), "example" (show examples)')
-            ->optional()
-            ->string('category')
-            ->description('Limit search to specific category: installation, repositories, fields, filters, auth, actions, performance, testing')
-            ->optional()
-            ->integer('limit')
-            ->description('Maximum number of results to return per query (default: 10, max: 50)')
-            ->optional()
-            ->integer('token_limit')
-            ->description('Maximum number of tokens to return in the response. Defaults to 10,000 tokens, maximum 100,000 tokens.')
-            ->optional();
+        return [
+            'queries' => $schema->array()
+                ->description('List of search queries to perform. For questions like "how many types of filters", use ["filter types", "filtering", "match filters"]. For "available field types", use ["field types", "fields", "field methods"]. Pass multiple queries if you aren\'t sure about exact terminology.')
+                ->items($schema->string()->description('Search query string - extract key terms from user questions'))
+                ->minItems(1),
+            'question_type' => $schema->string()
+                ->description('Type of question being asked: "count" (how many types), "list" (what are available), "howto" (how to do something), "concept" (explain concept), "example" (show examples)')
+                ->optional(),
+            'category' => $schema->string()
+                ->description('Limit search to specific category: installation, repositories, fields, filters, auth, actions, performance, testing')
+                ->optional(),
+            'limit' => $schema->integer()
+                ->description('Maximum number of results to return per query (default: 10, max: 50)')
+                ->optional(),
+            'token_limit' => $schema->integer()
+                ->description('Maximum number of tokens to return in the response. Defaults to 10,000 tokens, maximum 100,000 tokens.')
+                ->optional(),
+        ];
     }
 
     /**
-     * @param  array<string, mixed>  $arguments
+     * Handle the tool request.
      */
-    public function handle(array $arguments): ToolResult|Generator
+    public function handle(Request $request): Response
     {
         try {
             $queries = array_filter(
-                array_map('trim', $arguments['queries']),
+                array_map('trim', $request->get('queries', [])),
                 fn ($query) => $query !== '' && strlen($query) >= config('restify-boost.search.min_query_length', 2)
             );
 
             if (empty($queries)) {
-                return ToolResult::error('At least one valid query is required (minimum 2 characters)');
+                return Response::error('At least one valid query is required (minimum 2 characters)');
             }
 
-            $questionType = $arguments['question_type'] ?? null;
-            $category = $arguments['category'] ?? null;
+            $questionType = $request->get('question_type');
+            $category = $request->get('category');
             $limit = min(
-                $arguments['limit'] ?? config('restify-boost.search.default_limit', 10),
+                $request->get('limit', config('restify-boost.search.default_limit', 10)),
                 config('restify-boost.search.max_limit', 50)
             );
             $tokenLimit = min(
-                $arguments['token_limit'] ?? config('restify-boost.optimization.default_token_limit', 10000),
+                $request->get('token_limit', config('restify-boost.optimization.default_token_limit', 10000)),
                 config('restify-boost.optimization.max_token_limit', 100000)
             );
 
@@ -94,9 +96,9 @@ class SearchRestifyDocs extends Tool
             // Format and optimize results
             $response = $this->formatResults($allResults, $tokenLimit, $questionType, $queries);
 
-            return ToolResult::text($response);
+            return Response::text($response);
         } catch (\Throwable $e) {
-            return ToolResult::error('Search failed: '.$e->getMessage());
+            return Response::error('Search failed: '.$e->getMessage());
         }
     }
 
@@ -138,7 +140,7 @@ class SearchRestifyDocs extends Tool
         return $files;
     }
 
-    protected function handleNoResults(array $queries, ?string $category): ToolResult
+    protected function handleNoResults(array $queries, ?string $category): Response
     {
         $suggestions = [];
 
@@ -170,7 +172,7 @@ class SearchRestifyDocs extends Tool
 
         $message .= "\n\n".implode("\n", $suggestions);
 
-        return ToolResult::text($message);
+        return Response::text($message);
     }
 
     protected function formatResults(array $allResults, int $tokenLimit, ?string $questionType = null, array $originalQueries = []): string

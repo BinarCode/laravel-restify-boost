@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace BinarCode\RestifyBoost\Mcp\Tools;
 
-use Generator;
 use Illuminate\Support\Facades\File;
 use Laravel\Mcp\Server\Tool;
-use Laravel\Mcp\Server\Tools\ToolInputSchema;
-use Laravel\Mcp\Server\Tools\ToolResult;
+use Illuminate\JsonSchema\JsonSchema;
+use Laravel\Mcp\Request;
+use Laravel\Mcp\Response;
 use Symfony\Component\Finder\Finder;
 
 class UpgradeRestifyTool extends Tool
@@ -36,43 +36,37 @@ class UpgradeRestifyTool extends Tool
         return 'Upgrade Laravel Restify from version 9.x to 10.x. This tool migrates repositories to use modern PHP attributes for model definitions, converts static search/sort arrays to field-level methods, checks config file compatibility, and provides a comprehensive upgrade report with recommendations.';
     }
 
-    public function schema(ToolInputSchema $schema): ToolInputSchema
+    public function schema(JsonSchema $schema): array
     {
-        return $schema
-            ->boolean('dry_run')
-            ->description('Preview changes without applying them (default: true)')
-            ->optional()
-            ->boolean('migrate_attributes')
-            ->description('Convert static $model properties to PHP attributes (default: true)')
-            ->optional()
-            ->boolean('migrate_fields')
-            ->description('Convert static $search/$sort arrays to field-level methods (default: true)')
-            ->optional()
-            ->boolean('check_config')
-            ->description('Check and report config file compatibility (default: true)')
-            ->optional()
-            ->boolean('backup_files')
-            ->description('Create backups of modified files (default: true)')
-            ->optional()
-            ->boolean('interactive')
-            ->description('Prompt for confirmation before each change (default: true)')
-            ->optional()
-            ->string('path')
-            ->description('Specific path to scan for repositories (defaults to app/Restify)')
-            ->optional();
+        return [
+            'dry_run' => $schema->boolean()
+                ->description('Preview changes without applying them (default: true)'),
+            'migrate_attributes' => $schema->boolean()
+                ->description('Convert static $model properties to PHP attributes (default: true)'),
+            'migrate_fields' => $schema->boolean()
+                ->description('Convert static $search/$sort arrays to field-level methods (default: true)'),
+            'check_config' => $schema->boolean()
+                ->description('Check and report config file compatibility (default: true)'),
+            'backup_files' => $schema->boolean()
+                ->description('Create backups of modified files (default: true)'),
+            'interactive' => $schema->boolean()
+                ->description('Prompt for confirmation before each change (default: true)'),
+            'path' => $schema->string()
+                ->description('Specific path to scan for repositories (defaults to app/Restify)'),
+        ];
     }
 
-    public function handle(array $arguments): ToolResult|Generator
+    public function handle(Request $request): Response
     {
         try {
-            $options = $this->parseArguments($arguments);
+            $options = $this->parseArguments($request);
             $report = $this->initializeReport();
 
             $repositories = $this->scanRepositories($options['customPath']);
             $report['summary']['repositories_found'] = count($repositories);
 
             if (empty($repositories)) {
-                return ToolResult::text('No Restify repositories found. Ensure you have repositories in app/Restify or specify a custom path.');
+                return Response::text('No Restify repositories found. Ensure you have repositories in app/Restify or specify a custom path.');
             }
 
             $report = $this->analyzeRepositories($repositories, $report);
@@ -90,20 +84,20 @@ class UpgradeRestifyTool extends Tool
             return $this->generateUpgradeReport($report, $options['dryRun']);
 
         } catch (\Throwable $e) {
-            return ToolResult::error('Restify upgrade failed: '.$e->getMessage());
+            return Response::error('Restify upgrade failed: '.$e->getMessage());
         }
     }
 
-    private function parseArguments(array $arguments): array
+    private function parseArguments(Request $request): array
     {
         return [
-            'dryRun' => $arguments['dry_run'] ?? true,
-            'migrateAttributes' => $arguments['migrate_attributes'] ?? true,
-            'migrateFields' => $arguments['migrate_fields'] ?? true,
-            'checkConfig' => $arguments['check_config'] ?? true,
-            'backupFiles' => $arguments['backup_files'] ?? true,
-            'interactive' => $arguments['interactive'] ?? true,
-            'customPath' => $arguments['path'] ?? null,
+            'dryRun' => $request->get('dry_run') ?? true,
+            'migrateAttributes' => $request->get('migrate_attributes') ?? true,
+            'migrateFields' => $request->get('migrate_fields') ?? true,
+            'checkConfig' => $request->get('check_config') ?? true,
+            'backupFiles' => $request->get('backup_files') ?? true,
+            'interactive' => $request->get('interactive') ?? true,
+            'customPath' => $request->get('path') ?? null,
         ];
     }
 
@@ -568,7 +562,7 @@ class UpgradeRestifyTool extends Tool
         }
     }
 
-    protected function generateUpgradeReport(array $report, bool $dryRun): ToolResult
+    protected function generateUpgradeReport(array $report, bool $dryRun): Response
     {
         $response = $this->buildReportHeader($dryRun);
         $response .= $this->buildSummarySection($report);
@@ -579,7 +573,7 @@ class UpgradeRestifyTool extends Tool
         $response .= $this->buildBackupInformationSection($report);
         $response .= $this->buildAdditionalResourcesSection();
 
-        return ToolResult::text($response);
+        return Response::text($response);
     }
 
     private function buildReportHeader(bool $dryRun): string

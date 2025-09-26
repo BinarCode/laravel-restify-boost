@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace BinarCode\RestifyBoost\Mcp\Tools;
 
-use Generator;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Laravel\Mcp\Server\Tool;
-use Laravel\Mcp\Server\Tools\ToolInputSchema;
-use Laravel\Mcp\Server\Tools\ToolResult;
+use Illuminate\JsonSchema\JsonSchema;
+use Laravel\Mcp\Request;
+use Laravel\Mcp\Response;
 use Symfony\Component\Finder\Finder;
 
 class GenerateActionTool extends Tool
@@ -19,54 +19,45 @@ class GenerateActionTool extends Tool
         return 'Generate a Laravel Restify action class. Actions allow you to define custom operations for your repositories beyond basic CRUD. This tool can create different types of actions: index actions (for multiple models), show actions (for single models), standalone actions (no models required), invokable actions, or destructive actions. It follows existing project patterns and generates appropriate validation rules.';
     }
 
-    public function schema(ToolInputSchema $schema): ToolInputSchema
+    public function schema(JsonSchema $schema): array
     {
-        return $schema
-            ->string('action_name')
-            ->description('Name of the action class (e.g., "PublishPost", "DisableProfile", "ExportUsers")')
-            ->required()
-            ->string('action_type')
-            ->description('Type of action: "index" (for multiple models), "show" (for single model), "standalone" (no models), "invokable" (simple __invoke method), or "destructive" (extends DestructiveAction)')
-            ->optional()
-            ->string('model_name')
-            ->description('Name of the model this action works with (optional, used for show/index actions)')
-            ->optional()
-            ->raw('validation_rules', [
-                'description' => 'Validation rules for the action payload as key-value pairs',
-                'type' => 'object',
-                'additionalProperties' => true,
-            ])
-            ->optional()
-            ->string('uri_key')
-            ->description('Custom URI key for the action (defaults to kebab-case of class name)')
-            ->optional()
-            ->string('namespace')
-            ->description('Override default namespace (auto-detected from existing actions)')
-            ->optional()
-            ->boolean('force')
-            ->description('Overwrite existing action file if it exists')
-            ->optional();
+        return [
+            'action_name' => $schema->string()
+                ->description('Name of the action class (e.g., "PublishPost", "DisableProfile", "ExportUsers")'),
+            'action_type' => $schema->string()
+                ->description('Type of action: "index" (for multiple models), "show" (for single model), "standalone" (no models), "invokable" (simple __invoke method), or "destructive" (extends DestructiveAction)'),
+            'model_name' => $schema->string()
+                ->description('Name of the model this action works with (optional, used for show/index actions)'),
+            'validation_rules' => $schema->object()
+                ->description('Validation rules for the action payload as key-value pairs'),
+            'uri_key' => $schema->string()
+                ->description('Custom URI key for the action (defaults to kebab-case of class name)'),
+            'namespace' => $schema->string()
+                ->description('Override default namespace (auto-detected from existing actions)'),
+            'force' => $schema->boolean()
+                ->description('Overwrite existing action file if it exists'),
+        ];
     }
 
-    public function handle(array $arguments): ToolResult|Generator
+    public function handle(Request $request): Response
     {
         try {
-            $actionName = trim($arguments['action_name']);
-            $actionType = $arguments['action_type'] ?? 'index';
-            $modelName = $arguments['model_name'] ?? null;
-            $validationRules = $arguments['validation_rules'] ?? [];
-            $uriKey = $arguments['uri_key'] ?? null;
-            $customNamespace = $arguments['namespace'] ?? null;
-            $force = $arguments['force'] ?? false;
+            $actionName = trim($request->get('action_name'));
+            $actionType = $request->get('action_type') ?? 'index';
+            $modelName = $request->get('model_name') ?? null;
+            $validationRules = $request->get('validation_rules') ?? [];
+            $uriKey = $request->get('uri_key') ?? null;
+            $customNamespace = $request->get('namespace') ?? null;
+            $force = $request->get('force') ?? false;
 
             if (empty($actionName)) {
-                return ToolResult::error('Action name is required');
+                return Response::error('Action name is required');
             }
 
             // Validate action type
             $validActionTypes = ['index', 'show', 'standalone', 'invokable', 'destructive'];
             if (! in_array($actionType, $validActionTypes)) {
-                return ToolResult::error('Invalid action type. Must be one of: '.implode(', ', $validActionTypes));
+                return Response::error('Invalid action type. Must be one of: '.implode(', ', $validActionTypes));
             }
 
             // Step 1: Analyze existing action patterns
@@ -83,7 +74,7 @@ class GenerateActionTool extends Tool
 
             // Step 3: Check if action already exists
             if (! $force && File::exists($actionDetails['file_path'])) {
-                return ToolResult::error(
+                return Response::error(
                     "Action already exists at: {$actionDetails['file_path']}\n".
                     "Use 'force: true' to overwrite."
                 );
@@ -105,7 +96,7 @@ class GenerateActionTool extends Tool
             return $this->generateSuccessResponse($actionDetails, $actionContent);
 
         } catch (\Throwable $e) {
-            return ToolResult::error('Action generation failed: '.$e->getMessage());
+            return Response::error('Action generation failed: '.$e->getMessage());
         }
     }
 
@@ -421,7 +412,7 @@ namespace {$content['namespace']};
 ";
     }
 
-    protected function generateSuccessResponse(array $actionDetails, array $content): ToolResult
+    protected function generateSuccessResponse(array $actionDetails, array $content): Response
     {
         $response = "# Action Generated Successfully!\n\n";
         $response .= "**Action:** `{$actionDetails['action_name']}`\n";
@@ -545,7 +536,7 @@ namespace {$content['namespace']};
         $response .= "- **Authorization**: Use `->canSee(fn(\$request) => ...)` for access control\n";
         $response .= "- **Custom URI Key**: Set `\$uriKey` property for consistent API endpoints\n";
 
-        return ToolResult::text($response);
+        return Response::text($response);
     }
 
     protected function getRootNamespace(): string

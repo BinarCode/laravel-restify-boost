@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace BinarCode\RestifyBoost\Mcp\Tools;
 
-use Generator;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Process;
 use Laravel\Mcp\Server\Tool;
-use Laravel\Mcp\Server\Tools\ToolInputSchema;
-use Laravel\Mcp\Server\Tools\ToolResult;
+use Illuminate\JsonSchema\JsonSchema;
+use Laravel\Mcp\Request;
+use Laravel\Mcp\Response;
 
 class InstallRestifyTool extends Tool
 {
@@ -21,60 +21,52 @@ class InstallRestifyTool extends Tool
         return 'Install and setup Laravel Restify package with all necessary configurations. This tool handles composer installation, downloads the latest config file from Laravel Restify 10.x, runs setup commands, creates the Restify service provider, scaffolds repositories, optionally configures authentication middleware, generates mock data, and can setup MCP (Model Context Protocol) server routes for AI integration.';
     }
 
-    public function schema(ToolInputSchema $schema): ToolInputSchema
+    public function schema(JsonSchema $schema): array
     {
-        return $schema
-            ->boolean('run_migrations')
-            ->description('Run migrations after setup (default: true)')
-            ->optional()
-            ->boolean('enable_sanctum_auth')
-            ->description('Enable Sanctum authentication middleware in restify config')
-            ->optional()
-            ->string('api_prefix')
-            ->description('Custom API prefix (default: /api/restify)')
-            ->optional()
-            ->boolean('install_doctrine_dbal')
-            ->description('Install doctrine/dbal for mock data generation')
-            ->optional()
-            ->integer('generate_users_count')
-            ->description('Number of mock users to generate (requires doctrine/dbal)')
-            ->optional()
-            ->boolean('generate_repositories')
-            ->description('Auto-generate repositories for all existing models')
-            ->optional()
-            ->boolean('force')
-            ->description('Force installation even if already installed')
-            ->optional()
-            ->boolean('update_config')
-            ->description('Download and use the latest config file from Laravel Restify 10.x (default: true)')
-            ->optional()
-            ->boolean('setup_mcp')
-            ->description('Setup MCP (Model Context Protocol) server routes for AI integration (default: false)')
-            ->optional();
+        return [
+            'run_migrations' => $schema->boolean()
+                ->description('Run migrations after setup (default: true)'),
+            'enable_sanctum_auth' => $schema->boolean()
+                ->description('Enable Sanctum authentication middleware in restify config'),
+            'api_prefix' => $schema->string()
+                ->description('Custom API prefix (default: /api/restify)'),
+            'install_doctrine_dbal' => $schema->boolean()
+                ->description('Install doctrine/dbal for mock data generation'),
+            'generate_users_count' => $schema->integer()
+                ->description('Number of mock users to generate (requires doctrine/dbal)'),
+            'generate_repositories' => $schema->boolean()
+                ->description('Auto-generate repositories for all existing models'),
+            'force' => $schema->boolean()
+                ->description('Force installation even if already installed'),
+            'update_config' => $schema->boolean()
+                ->description('Download and use the latest config file from Laravel Restify 10.x (default: true)'),
+            'setup_mcp' => $schema->boolean()
+                ->description('Setup MCP (Model Context Protocol) server routes for AI integration (default: false)'),
+        ];
     }
 
-    public function handle(array $arguments): ToolResult|Generator
+    public function handle(Request $request): Response
     {
         try {
-            $runMigrations = $arguments['run_migrations'] ?? true;
-            $enableSanctumAuth = $arguments['enable_sanctum_auth'] ?? false;
-            $apiPrefix = $arguments['api_prefix'] ?? null;
-            $installDoctrineDbal = $arguments['install_doctrine_dbal'] ?? false;
-            $generateUsersCount = $arguments['generate_users_count'] ?? 0;
-            $generateRepositories = $arguments['generate_repositories'] ?? false;
-            $force = $arguments['force'] ?? false;
-            $updateConfig = $arguments['update_config'] ?? true;
-            $setupMcp = $arguments['setup_mcp'] ?? false;
+            $runMigrations = $request->get('run_migrations') ?? true;
+            $enableSanctumAuth = $request->get('enable_sanctum_auth') ?? false;
+            $apiPrefix = $request->get('api_prefix') ?? null;
+            $installDoctrineDbal = $request->get('install_doctrine_dbal') ?? false;
+            $generateUsersCount = $request->get('generate_users_count') ?? 0;
+            $generateRepositories = $request->get('generate_repositories') ?? false;
+            $force = $request->get('force') ?? false;
+            $updateConfig = $request->get('update_config') ?? true;
+            $setupMcp = $request->get('setup_mcp') ?? false;
 
             // Step 1: Validate environment
             $validationResult = $this->validateEnvironment();
             if (! $validationResult['success']) {
-                return ToolResult::error($validationResult['message']);
+                return Response::error($validationResult['message']);
             }
 
             // Step 2: Check if already installed
             if (! $force && $this->isRestifyAlreadyInstalled()) {
-                return ToolResult::error(
+                return Response::error(
                     'Laravel Restify is already installed. Use "force: true" to reinstall.'
                 );
             }
@@ -85,14 +77,14 @@ class InstallRestifyTool extends Tool
             $installResult = $this->installComposerPackage();
             $results[] = $installResult;
             if (! $installResult['success']) {
-                return ToolResult::error($installResult['message']);
+                return Response::error($installResult['message']);
             }
 
             // Step 4: Run restify setup
             $setupResult = $this->runRestifySetup();
             $results[] = $setupResult;
             if (! $setupResult['success']) {
-                return ToolResult::error($setupResult['message']);
+                return Response::error($setupResult['message']);
             }
 
             // Step 4.5: Update config file with latest version
@@ -137,10 +129,10 @@ class InstallRestifyTool extends Tool
                 $results[] = $this->setupMcpRoutes();
             }
 
-            return $this->generateSuccessResponse($results, $arguments);
+            return $this->generateSuccessResponse($results, $request);
 
         } catch (\Throwable $e) {
-            return ToolResult::error('Restify installation failed: '.$e->getMessage());
+            return Response::error('Restify installation failed: '.$e->getMessage());
         }
     }
 
@@ -660,7 +652,7 @@ Mcp::web(\'restify\', RestifyServer::class)
 ';
     }
 
-    protected function generateSuccessResponse(array $results, array $arguments): ToolResult
+    protected function generateSuccessResponse(array $results, Request $request): Response
     {
         $response = "# Laravel Restify Installation Complete! 🎉\n\n";
 
@@ -677,33 +669,33 @@ Mcp::web(\'restify\', RestifyServer::class)
         // Configuration summary
         $response .= "\n## Configuration Applied\n\n";
 
-        if ($arguments['enable_sanctum_auth'] ?? false) {
+        if ($request->get('enable_sanctum_auth') ?? false) {
             $response .= "✅ **Sanctum Authentication:** Enabled\n";
         }
 
-        if (! empty($arguments['api_prefix'])) {
-            $response .= "✅ **API Prefix:** `{$arguments['api_prefix']}`\n";
+        if (! empty($request->get('api_prefix'))) {
+            $response .= "✅ **API Prefix:** `{$request->get('api_prefix')}`\n";
         } else {
             $response .= "ℹ️ **API Prefix:** `/api/restify` (default)\n";
         }
 
-        if ($arguments['install_doctrine_dbal'] ?? false) {
+        if ($request->get('install_doctrine_dbal') ?? false) {
             $response .= "✅ **Doctrine DBAL:** Installed for mock data generation\n";
         }
 
-        if (($arguments['generate_users_count'] ?? 0) > 0) {
-            $response .= "✅ **Mock Users:** Generated {$arguments['generate_users_count']} users\n";
+        if (($request->get('generate_users_count') ?? 0) > 0) {
+            $response .= "✅ **Mock Users:** Generated {$request->get('generate_users_count')} users\n";
         }
 
-        if ($arguments['generate_repositories'] ?? false) {
+        if ($request->get('generate_repositories') ?? false) {
             $response .= "✅ **Repositories:** Auto-generated for existing models\n";
         }
 
-        if ($arguments['update_config'] ?? true) {
+        if ($request->get('update_config') ?? true) {
             $response .= "✅ **Config File:** Updated with latest Laravel Restify 10.x configuration\n";
         }
 
-        if ($arguments['setup_mcp'] ?? false) {
+        if ($request->get('setup_mcp') ?? false) {
             $response .= "✅ **MCP Server:** AI integration routes configured in routes/ai.php\n";
         }
 
@@ -716,16 +708,16 @@ Mcp::web(\'restify\', RestifyServer::class)
         $response .= "- `app/Restify/UserRepository.php` - User repository example\n";
         $response .= "- Database migration for action logs\n";
 
-        if ($arguments['update_config'] ?? true) {
+        if ($request->get('update_config') ?? true) {
             $response .= "- `config/restify.php.backup-*` - Backup of previous config (if existed)\n";
         }
         
-        if ($arguments['setup_mcp'] ?? false) {
+        if ($request->get('setup_mcp') ?? false) {
             $response .= "- `routes/ai.php` - MCP server routes for AI integration\n";
         }
 
         // API endpoints
-        $apiPrefix = $arguments['api_prefix'] ?? '/api/restify';
+        $apiPrefix = $request->get('api_prefix') ?? '/api/restify';
         $response .= "\n## Available API Endpoints\n\n";
         $response .= "Your Laravel Restify API is now available at:\n\n";
         $response .= "```\n";
@@ -737,7 +729,7 @@ Mcp::web(\'restify\', RestifyServer::class)
         $response .= "```\n";
 
         // MCP endpoints if enabled
-        if ($arguments['setup_mcp'] ?? false) {
+        if ($request->get('setup_mcp') ?? false) {
             $response .= "\n## MCP Server Endpoints\n\n";
             $response .= "Your MCP (Model Context Protocol) server is available at:\n\n";
             $response .= "```\n";
@@ -754,17 +746,17 @@ Mcp::web(\'restify\', RestifyServer::class)
         $response .= "4. **Generate policies:** `php artisan restify:policy UserPolicy`\n";
         $response .= "5. **Review documentation:** https://restify.binarcode.com\n";
 
-        if ($arguments['enable_sanctum_auth'] ?? false) {
+        if ($request->get('enable_sanctum_auth') ?? false) {
             $response .= "6. **Configure Sanctum:** Ensure Laravel Sanctum is properly set up\n";
         }
 
-        if ($arguments['setup_mcp'] ?? false) {
-            $nextStepNumber = ($arguments['enable_sanctum_auth'] ?? false) ? "7" : "6";
+        if ($request->get('setup_mcp') ?? false) {
+            $nextStepNumber = ($request->get('enable_sanctum_auth') ?? false) ? "7" : "6";
             $response .= "{$nextStepNumber}. **Test MCP Server:** Connect your AI client to `/mcp/restify` endpoint\n";
         }
 
         // Authentication note
-        if ($arguments['enable_sanctum_auth'] ?? false) {
+        if ($request->get('enable_sanctum_auth') ?? false) {
             $response .= "\n## Authentication Note\n\n";
             $response .= "⚠️ **Sanctum authentication is enabled.** Make sure:\n";
             $response .= "- Laravel Sanctum is installed: `composer require laravel/sanctum`\n";
@@ -773,7 +765,7 @@ Mcp::web(\'restify\', RestifyServer::class)
         }
 
         // MCP note
-        if ($arguments['setup_mcp'] ?? false) {
+        if ($request->get('setup_mcp') ?? false) {
             $response .= "\n## MCP Server Note\n\n";
             $response .= "🤖 **MCP server is configured.** To use it:\n";
             $response .= "- The MCP server is protected by Sanctum authentication\n";
@@ -797,6 +789,6 @@ Mcp::web(\'restify\', RestifyServer::class)
         $response .= "php artisan vendor:publish --provider=\"Binaryk\\LaravelRestify\\LaravelRestifyServiceProvider\" --tag=config --force\n";
         $response .= "```\n";
 
-        return ToolResult::text($response);
+        return Response::text($response);
     }
 }

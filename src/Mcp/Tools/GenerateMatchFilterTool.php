@@ -4,70 +4,61 @@ declare(strict_types=1);
 
 namespace BinarCode\RestifyBoost\Mcp\Tools;
 
+use Illuminate\JsonSchema\JsonSchema;
+use Laravel\Mcp\Request;
+use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Tool;
-use Laravel\Mcp\Server\Tools\ToolResult;
 
 class GenerateMatchFilterTool extends Tool
 {
-    public function name(): string
-    {
-        return 'generate-match-filter';
-    }
+    /**
+     * The tool's description.
+     */
+    protected string $description = 'Generate Laravel Restify match filter classes for exact matching and custom filtering logic. Supports all match types: string, int, bool, datetime, between, array, and custom filters with complex logic.';
 
-    public function description(): string
-    {
-        return 'Generate Laravel Restify match filter classes for exact matching and custom filtering logic. Supports all match types: string, int, bool, datetime, between, array, and custom filters with complex logic.';
-    }
-
-    public function parameters(): array
+    /**
+     * Get the tool's input schema.
+     *
+     * @return array<string, JsonSchema>
+     */
+    public function schema(JsonSchema $schema): array
     {
         return [
-            'name' => [
-                'type' => 'string',
-                'description' => 'The name of the match filter class (e.g., ActivePostMatchFilter)',
-                'required' => true,
-            ],
-            'attribute' => [
-                'type' => 'string',
-                'description' => 'The database attribute/column to filter on (e.g., status, active, category)',
-                'required' => true,
-            ],
-            'type' => [
-                'type' => 'string',
-                'description' => 'The match filter type',
-                'enum' => ['string', 'int', 'integer', 'bool', 'boolean', 'datetime', 'between', 'array', 'custom'],
-                'default' => 'string',
-            ],
-            'partial' => [
-                'type' => 'boolean',
-                'description' => 'Whether to use partial matching (LIKE queries) for text fields',
-                'default' => false,
-            ],
-            'custom_logic' => [
-                'type' => 'string',
-                'description' => 'Custom filtering logic description for complex filters (only when type is custom)',
-            ],
-            'repository' => [
-                'type' => 'string',
-                'description' => 'The repository class name to add the filter to (optional)',
-            ],
-            'namespace' => [
-                'type' => 'string',
-                'description' => 'Custom namespace for the filter class',
-                'default' => 'App\\Restify\\Filters',
-            ],
+            'name' => $schema->string()
+                ->description('The name of the match filter class (e.g., ActivePostMatchFilter)'),
+            'attribute' => $schema->string()
+                ->description('The database attribute/column to filter on (e.g., status, active, category)'),
+            'type' => $schema->string()
+                ->description('The match filter type')
+                ->enum(['string', 'int', 'integer', 'bool', 'boolean', 'datetime', 'between', 'array', 'custom'])
+                ->optional(),
+            'partial' => $schema->boolean()
+                ->description('Whether to use partial matching (LIKE queries) for text fields')
+                ->optional(),
+            'custom_logic' => $schema->string()
+                ->description('Custom filtering logic description for complex filters (only when type is custom)')
+                ->optional(),
+            'repository' => $schema->string()
+                ->description('The repository class name to add the filter to (optional)')
+                ->optional(),
+            'namespace' => $schema->string()
+                ->description('Custom namespace for the filter class')
+                ->optional(),
         ];
     }
 
-    public function handle(array $arguments): \Laravel\Mcp\Server\Tools\ToolResult
+    /**
+     * Handle the tool request.
+     */
+    public function handle(Request $request): Response
     {
-        $name = $arguments['name'];
-        $attribute = $arguments['attribute'];
-        $type = $arguments['type'] ?? 'string';
-        $partial = $arguments['partial'] ?? false;
-        $customLogic = $arguments['custom_logic'] ?? null;
-        $repository = $arguments['repository'] ?? null;
-        $namespace = $arguments['namespace'] ?? 'App\\Restify\\Filters';
+        $name = $request->get('name');
+        $attribute = $request->get('attribute');
+        $type = $request->get('type', 'string');
+        $partial = $request->get('partial', false);
+        $customLogic = $request->get('custom_logic');
+        $repository = $request->get('repository');
+        $namespace = $request->get('namespace', 'App\\Restify\\Filters');
 
         // Generate the filter class
         $filterClass = $this->generateFilterClass($name, $attribute, $type, $partial, $customLogic, $namespace);
@@ -78,7 +69,7 @@ class GenerateMatchFilterTool extends Tool
         // Generate usage examples
         $usageExamples = $this->generateUsageExamples($attribute, $type);
 
-        return ToolResult::content([
+        return Response::json([
             'filter_class' => $filterClass,
             'repository_integration' => $repositoryExample,
             'usage_examples' => $usageExamples,

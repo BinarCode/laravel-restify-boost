@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace BinarCode\RestifyBoost\Mcp\Tools;
 
-use Generator;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Laravel\Mcp\Server\Tool;
-use Laravel\Mcp\Server\Tools\ToolInputSchema;
-use Laravel\Mcp\Server\Tools\ToolResult;
+use Illuminate\JsonSchema\JsonSchema;
+use Laravel\Mcp\Request;
+use Laravel\Mcp\Response;
 use Symfony\Component\Finder\Finder;
 
 class GenerateGetterTool extends Tool
@@ -19,57 +19,51 @@ class GenerateGetterTool extends Tool
         return 'Generate a Laravel Restify getter class. Getters allow you to define custom GET-only operations for your repositories to retrieve additional data without modifying the main CRUD operations. This tool can create invokable getters (simple __invoke method) or extended getters (with handle method), and can be scoped to index (multiple items), show (single model), or both contexts.';
     }
 
-    public function schema(ToolInputSchema $schema): ToolInputSchema
+    public function schema(JsonSchema $schema): array
     {
-        return $schema
-            ->string('getter_name')
-            ->description('Name of the getter class (e.g., "StripeInformation", "UserStats", "ExportData")')
-            ->required()
-            ->string('getter_type')
-            ->description('Type of getter: "invokable" (simple __invoke method) or "extended" (extends Getter class with handle method)')
-            ->optional()
-            ->string('scope')
-            ->description('Getter scope: "index" (multiple items), "show" (single model), or "both" (default - can be used in both contexts)')
-            ->optional()
-            ->string('model_name')
-            ->description('Name of the model this getter works with (optional, used for show getters to generate proper method signature)')
-            ->optional()
-            ->string('uri_key')
-            ->description('Custom URI key for the getter (defaults to kebab-case of class name)')
-            ->optional()
-            ->string('namespace')
-            ->description('Override default namespace (auto-detected from existing getters)')
-            ->optional()
-            ->boolean('force')
-            ->description('Overwrite existing getter file if it exists')
-            ->optional();
+        return [
+            'getter_name' => $schema->string()
+                ->description('Name of the getter class (e.g., "StripeInformation", "UserStats", "ExportData")'),
+            'getter_type' => $schema->string()
+                ->description('Type of getter: "invokable" (simple __invoke method) or "extended" (extends Getter class with handle method)'),
+            'scope' => $schema->string()
+                ->description('Getter scope: "index" (multiple items), "show" (single model), or "both" (default - can be used in both contexts)'),
+            'model_name' => $schema->string()
+                ->description('Name of the model this getter works with (optional, used for show getters to generate proper method signature)'),
+            'uri_key' => $schema->string()
+                ->description('Custom URI key for the getter (defaults to kebab-case of class name)'),
+            'namespace' => $schema->string()
+                ->description('Override default namespace (auto-detected from existing getters)'),
+            'force' => $schema->boolean()
+                ->description('Overwrite existing getter file if it exists'),
+        ];
     }
 
-    public function handle(array $arguments): ToolResult|Generator
+    public function handle(Request $request): Response
     {
         try {
-            $getterName = trim($arguments['getter_name']);
-            $getterType = $arguments['getter_type'] ?? 'extended';
-            $scope = $arguments['scope'] ?? 'both';
-            $modelName = $arguments['model_name'] ?? null;
-            $uriKey = $arguments['uri_key'] ?? null;
-            $customNamespace = $arguments['namespace'] ?? null;
-            $force = $arguments['force'] ?? false;
+            $getterName = trim($request->get('getter_name'));
+            $getterType = $request->get('getter_type') ?? 'extended';
+            $scope = $request->get('scope') ?? 'both';
+            $modelName = $request->get('model_name') ?? null;
+            $uriKey = $request->get('uri_key') ?? null;
+            $customNamespace = $request->get('namespace') ?? null;
+            $force = $request->get('force') ?? false;
 
             if (empty($getterName)) {
-                return ToolResult::error('Getter name is required');
+                return Response::error('Getter name is required');
             }
 
             // Validate getter type
             $validGetterTypes = ['invokable', 'extended'];
             if (! in_array($getterType, $validGetterTypes)) {
-                return ToolResult::error('Invalid getter type. Must be one of: '.implode(', ', $validGetterTypes));
+                return Response::error('Invalid getter type. Must be one of: '.implode(', ', $validGetterTypes));
             }
 
             // Validate scope
             $validScopes = ['index', 'show', 'both'];
             if (! in_array($scope, $validScopes)) {
-                return ToolResult::error('Invalid scope. Must be one of: '.implode(', ', $validScopes));
+                return Response::error('Invalid scope. Must be one of: '.implode(', ', $validScopes));
             }
 
             // Step 1: Analyze existing getter patterns
@@ -84,7 +78,7 @@ class GenerateGetterTool extends Tool
 
             // Step 3: Check if getter already exists
             if (! $force && File::exists($getterDetails['file_path'])) {
-                return ToolResult::error(
+                return Response::error(
                     "Getter already exists at: {$getterDetails['file_path']}\n".
                     "Use 'force: true' to overwrite."
                 );
@@ -106,7 +100,7 @@ class GenerateGetterTool extends Tool
             return $this->generateSuccessResponse($getterDetails, $getterContent);
 
         } catch (\Throwable $e) {
-            return ToolResult::error('Getter generation failed: '.$e->getMessage());
+            return Response::error('Getter generation failed: '.$e->getMessage());
         }
     }
 
@@ -371,7 +365,7 @@ namespace {$content['namespace']};
 ";
     }
 
-    protected function generateSuccessResponse(array $getterDetails, array $content): ToolResult
+    protected function generateSuccessResponse(array $getterDetails, array $content): Response
     {
         $response = "# Getter Generated Successfully!\n\n";
         $response .= "**Getter:** `{$getterDetails['getter_name']}`\n";
@@ -476,7 +470,7 @@ namespace {$content['namespace']};
         $response .= "- **Custom URI Key**: Set `\$uriKey` property for consistent API endpoints\n";
         $response .= "- **GET-only**: Remember getters should only perform read operations\n";
 
-        return ToolResult::text($response);
+        return Response::text($response);
     }
 
     protected function getRootNamespace(): string

@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace BinarCode\RestifyBoost\Mcp\Tools;
 
 use BinarCode\RestifyBoost\Services\DocIndexer;
-use Generator;
 use Laravel\Mcp\Server\Tool;
-use Laravel\Mcp\Server\Tools\ToolInputSchema;
-use Laravel\Mcp\Server\Tools\ToolResult;
+use Illuminate\JsonSchema\JsonSchema;
+use Laravel\Mcp\Request;
+use Laravel\Mcp\Response;
 
 class NavigateDocs extends Tool
 {
@@ -19,33 +19,30 @@ class NavigateDocs extends Tool
         return 'Navigate and browse Laravel Restify documentation by category or get an overview of available documentation structure. This tool helps you understand what documentation is available and provides organized access to different sections like installation, repositories, fields, authentication, etc.';
     }
 
-    public function schema(ToolInputSchema $schema): ToolInputSchema
+    public function schema(JsonSchema $schema): array
     {
-        return $schema
-            ->string('action')
-            ->description('Navigation action: "overview" for documentation structure, "category" to browse a specific category, "list-categories" to see all available categories')
-            ->required()
-            ->string('category')
-            ->description('Specific category to browse (required when action is "category"): installation, repositories, fields, filters, auth, actions, performance, testing')
-            ->optional()
-            ->boolean('include_content')
-            ->description('Include document summaries and content previews (default: true)')
-            ->optional()
-            ->integer('limit')
-            ->description('Maximum number of documents to show per category (default: 20)')
-            ->optional();
+        return [
+            'action' => $schema->string()
+                ->description('Navigation action: "overview" for documentation structure, "category" to browse a specific category, "list-categories" to see all available categories'),
+            'category' => $schema->string()
+                ->description('Specific category to browse (required when action is "category"): installation, repositories, fields, filters, auth, actions, performance, testing'),
+            'include_content' => $schema->boolean()
+                ->description('Include document summaries and content previews (default: true)'),
+            'limit' => $schema->integer()
+                ->description('Maximum number of documents to show per category (default: 20)'),
+        ];
     }
 
     /**
      * @param  array<string, mixed>  $arguments
      */
-    public function handle(array $arguments): ToolResult|Generator
+    public function handle(Request $request): Response
     {
         try {
-            $action = strtolower(trim($arguments['action']));
-            $category = $arguments['category'] ?? null;
-            $includeContent = $arguments['include_content'] ?? true;
-            $limit = min($arguments['limit'] ?? 20, 50);
+            $action = strtolower(trim($request->get('action')));
+            $category = $request->get('category') ?? null;
+            $includeContent = $request->get('include_content') ?? true;
+            $limit = min($request->get('limit') ?? 20, 50);
 
             // Initialize indexer
             $this->initializeIndexer();
@@ -54,10 +51,10 @@ class NavigateDocs extends Tool
                 'overview' => $this->generateOverview($includeContent),
                 'list-categories', 'categories' => $this->listCategories(),
                 'category' => $this->browseCategory($category, $includeContent, $limit),
-                default => ToolResult::error('Invalid action. Use "overview", "list-categories", or "category"'),
+                default => Response::error('Invalid action. Use "overview", "list-categories", or "category"'),
             };
         } catch (\Throwable $e) {
-            return ToolResult::error('Navigation failed: '.$e->getMessage());
+            return Response::error('Navigation failed: '.$e->getMessage());
         }
     }
 
@@ -97,12 +94,12 @@ class NavigateDocs extends Tool
         return $files;
     }
 
-    protected function generateOverview(bool $includeContent): ToolResult
+    protected function generateOverview(bool $includeContent): Response
     {
         $categories = $this->indexer->getCategories();
 
         if (empty($categories)) {
-            return ToolResult::text("No Laravel Restify documentation found.\n\nPlease ensure the Laravel Restify package is installed and documentation is available.");
+            return Response::text("No Laravel Restify documentation found.\n\nPlease ensure the Laravel Restify package is installed and documentation is available.");
         }
 
         $output = "# Laravel Restify Documentation Overview\n\n";
@@ -140,15 +137,15 @@ class NavigateDocs extends Tool
         $output .= "- Use `search-restify-docs` to find specific topics\n";
         $output .= "- Use `get-code-examples` for implementation examples\n";
 
-        return ToolResult::text($output);
+        return Response::text($output);
     }
 
-    protected function listCategories(): ToolResult
+    protected function listCategories(): Response
     {
         $categories = $this->indexer->getCategories();
 
         if (empty($categories)) {
-            return ToolResult::text('No documentation categories found.');
+            return Response::text('No documentation categories found.');
         }
 
         $output = "# Laravel Restify Documentation Categories\n\n";
@@ -171,13 +168,13 @@ class NavigateDocs extends Tool
 
         $output .= "**Usage:** Use `navigate-docs` with action \"category\" and specify one of the category keys above.\n";
 
-        return ToolResult::text($output);
+        return Response::text($output);
     }
 
-    protected function browseCategory(?string $category, bool $includeContent, int $limit): ToolResult
+    protected function browseCategory(?string $category, bool $includeContent, int $limit): Response
     {
         if (! $category) {
-            return ToolResult::error('Category is required when action is "category". Use "list-categories" to see available categories.');
+            return Response::error('Category is required when action is "category". Use "list-categories" to see available categories.');
         }
 
         $documents = $this->indexer->getDocumentsByCategory($category);
@@ -185,7 +182,7 @@ class NavigateDocs extends Tool
         if (empty($documents)) {
             $availableCategories = array_keys($this->indexer->getCategories());
 
-            return ToolResult::text(
+            return Response::text(
                 "No documents found in category: **{$category}**\n\n".
                 '**Available categories:** '.implode(', ', $availableCategories)
             );
@@ -252,7 +249,7 @@ class NavigateDocs extends Tool
         $output .= "- `search-restify-docs` with category=\"{$category}\" for specific topics\n";
         $output .= "- `get-code-examples` with category=\"{$category}\" for implementation examples\n";
 
-        return ToolResult::text($output);
+        return Response::text($output);
     }
 
     protected function getCategoryName(string $category): string

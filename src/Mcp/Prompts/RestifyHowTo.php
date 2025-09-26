@@ -5,50 +5,68 @@ declare(strict_types=1);
 namespace BinarCode\RestifyBoost\Mcp\Prompts;
 
 use BinarCode\RestifyBoost\Services\DocIndexer;
+use Laravel\Mcp\Request;
+use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Prompt;
-use Laravel\Mcp\Server\Prompts\PromptInputSchema;
-use Laravel\Mcp\Server\Prompts\PromptResult;
 
 class RestifyHowTo extends Prompt
 {
     public function __construct(protected DocIndexer $indexer) {}
 
-    public function name(): string
-    {
-        return 'restify-how-to';
-    }
+    /**
+     * The prompt's name.
+     */
+    protected string $name = 'restify-how-to';
 
-    public function description(): string
-    {
-        return 'Get step-by-step guidance on how to accomplish specific tasks with Laravel Restify. This prompt provides structured tutorials and explanations for common development scenarios like creating repositories, defining fields, implementing authentication, adding custom actions, and more.';
-    }
+    /**
+     * The prompt's title.
+     */
+    protected string $title = 'Laravel Restify How-To Guide';
 
-    public function schema(PromptInputSchema $schema): PromptInputSchema
+    /**
+     * Get the prompt's arguments.
+     *
+     * @return array<int, \Laravel\Mcp\Server\Prompts\Argument>
+     */
+    public function arguments(): array
     {
-        return $schema
-            ->string('task')
-            ->description('What you want to accomplish (e.g., "create a repository", "add custom validation", "implement authentication", "create a custom field")')
-            ->required()
-            ->string('context')
-            ->description('Additional context about your specific use case or requirements')
-            ->optional()
-            ->string('difficulty')
-            ->description('Preferred explanation level: "beginner", "intermediate", "advanced"')
-            ->optional();
+        return [
+            new \Laravel\Mcp\Server\Prompts\Argument(
+                name: 'task',
+                description: 'What you want to accomplish (e.g., "create a repository", "add custom validation", "implement authentication", "create a custom field")',
+                required: true
+            ),
+            new \Laravel\Mcp\Server\Prompts\Argument(
+                name: 'context',
+                description: 'Additional context about your specific use case or requirements',
+                required: false
+            ),
+            new \Laravel\Mcp\Server\Prompts\Argument(
+                name: 'difficulty',
+                description: 'Preferred explanation level: "beginner", "intermediate", "advanced"',
+                required: false
+            ),
+        ];
     }
 
     /**
-     * @param  array<string, mixed>  $arguments
+     * Handle the prompt request.
      */
-    public function handle(array $arguments): PromptResult
+    public function handle(Request $request): Response
     {
         try {
-            $task = trim($arguments['task']);
-            $context = $arguments['context'] ?? '';
-            $difficulty = strtolower($arguments['difficulty'] ?? 'intermediate');
+            $validated = $request->validate([
+                'task' => 'required|string|max:200',
+                'context' => 'nullable|string|max:500',
+                'difficulty' => 'nullable|string|in:beginner,intermediate,advanced',
+            ]);
+
+            $task = trim($validated['task']);
+            $context = $validated['context'] ?? '';
+            $difficulty = strtolower($validated['difficulty'] ?? 'intermediate');
 
             if (empty($task)) {
-                return PromptResult::text('Please specify what task you want to accomplish with Laravel Restify.');
+                return Response::text('Please specify what task you want to accomplish with Laravel Restify.');
             }
 
             // Initialize indexer
@@ -60,9 +78,9 @@ class RestifyHowTo extends Prompt
             // Generate structured how-to guide
             $howToGuide = $this->generateHowToGuide($task, $context, $difficulty, $searchResults);
 
-            return PromptResult::text($howToGuide);
+            return Response::text($howToGuide);
         } catch (\Throwable $e) {
-            return PromptResult::text("I encountered an error while generating the how-to guide: {$e->getMessage()}");
+            return Response::text("I encountered an error while generating the how-to guide: {$e->getMessage()}");
         }
     }
 
