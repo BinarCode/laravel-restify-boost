@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace BinarCode\RestifyBoost\Mcp\Tools;
 
+use Illuminate\JsonSchema\JsonSchema;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Process;
-use Laravel\Mcp\Server\Tool;
-use Illuminate\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
+use Laravel\Mcp\Server\Tool;
 
 class InstallRestifyTool extends Tool
 {
@@ -572,11 +572,11 @@ class InstallRestifyTool extends Tool
     {
         try {
             $routesPath = base_path('routes/ai.php');
-            
+
             // Check if routes/ai.php already exists
             if (File::exists($routesPath)) {
                 $existingContent = File::get($routesPath);
-                
+
                 // Check if MCP routes already exist
                 if (str_contains($existingContent, 'RestifyServer') || str_contains($existingContent, 'mcp.restify')) {
                     return [
@@ -585,33 +585,33 @@ class InstallRestifyTool extends Tool
                         'message' => 'MCP routes already configured in routes/ai.php',
                     ];
                 }
-                
+
                 // Append to existing file
                 $mcpRoutes = $this->getMcpRoutesContent();
-                File::append($routesPath, "\n\n" . $mcpRoutes);
-                
+                File::append($routesPath, "\n\n".$mcpRoutes);
+
                 return [
                     'success' => true,
                     'step' => 'MCP Setup',
                     'message' => 'MCP routes added to existing routes/ai.php file',
                 ];
             }
-            
+
             // Create new routes/ai.php file
             $fullRoutesContent = $this->getFullMcpRoutesFile();
             File::put($routesPath, $fullRoutesContent);
-            
+
             return [
                 'success' => true,
                 'step' => 'MCP Setup',
                 'message' => 'Created routes/ai.php with MCP server configuration',
             ];
-            
+
         } catch (\Exception $e) {
             return [
                 'success' => false,
                 'step' => 'MCP Setup',
-                'message' => 'Failed to setup MCP routes: ' . $e->getMessage(),
+                'message' => 'Failed to setup MCP routes: '.$e->getMessage(),
             ];
         }
     }
@@ -711,7 +711,7 @@ Mcp::web(\'restify\', RestifyServer::class)
         if ($request->get('update_config') ?? true) {
             $response .= "- `config/restify.php.backup-*` - Backup of previous config (if existed)\n";
         }
-        
+
         if ($request->get('setup_mcp') ?? false) {
             $response .= "- `routes/ai.php` - MCP server routes for AI integration\n";
         }
@@ -751,7 +751,7 @@ Mcp::web(\'restify\', RestifyServer::class)
         }
 
         if ($request->get('setup_mcp') ?? false) {
-            $nextStepNumber = ($request->get('enable_sanctum_auth') ?? false) ? "7" : "6";
+            $nextStepNumber = ($request->get('enable_sanctum_auth') ?? false) ? '7' : '6';
             $response .= "{$nextStepNumber}. **Test MCP Server:** Connect your AI client to `/mcp/restify` endpoint\n";
         }
 

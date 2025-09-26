@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace BinarCode\RestifyBoost\Mcp\Tools;
 
 use BinarCode\RestifyBoost\Services\DocIndexer;
-use Laravel\Mcp\Server\Tool;
 use Illuminate\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
+use Laravel\Mcp\Server\Tool;
 
 class NavigateDocs extends Tool
 {
